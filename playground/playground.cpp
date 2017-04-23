@@ -58,8 +58,8 @@ public:
 // auto lala_test1 = has_lala<DoesntHaveLala>::value;
 
 using typelist_pair = mp::tl::TypeList<char, short>;
-using typelist0 = mp::tl::TypeList<char, short, int>;
-using typelist1 = mp::tl::push_back_t<typelist0>;
+using typelist0		= mp::tl::TypeList<char, short, int>;
+using typelist1		= mp::tl::push_back_t<typelist0>;
 
 typelist1 list1;
 using typelist2 = mp::tl::concat_t<typelist0, typelist1>;
@@ -81,6 +81,23 @@ using type2 = mp::fn::rename_t<typelist_pair, std::pair>;
 type2 t2;
 using type3 = mp::fn::rename_t<typelist6, std::tuple>;
 type3 t3;
+
+using type4 = mp::tl::contains<typelist0, char>;
+type4 t4;
+bool  c = type4::value;
+
+template <class T, class U> struct lala : public std::true_type
+{
+};
+
+struct lala2 : public lala<A,B>
+{
+};
+
+lala<A, B> l;
+bool	   c0 = lala<A, B>::value;
+lala2	  l2;
+bool	   c1 = lala2::value;
 
 int main()
 {
