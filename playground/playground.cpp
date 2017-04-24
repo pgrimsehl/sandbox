@@ -5,6 +5,7 @@
 
 #include <mp/function.h>
 #include <mp/variant.h>
+#include <core/udl.h>
 
 #include <string>
 #include <tuple>
@@ -86,6 +87,8 @@ type4 t4;
 
 int main()
 {
+	u32 udl0 = "CRC32 UDL"_crc32;
+
 	bool a = mp::fn::is_baseclass_of<A, B>::value;
 	bool b = mp::fn::is_baseclass_of<A, SubA>::value;
 	bool c = mp::fn::is_baseclass_of<A, SubSubA>::value;

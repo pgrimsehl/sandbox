@@ -18,5 +18,11 @@
     <ClInclude Include="types.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="udl.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="udl_crc32.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
