@@ -1,0 +1,20 @@
+﻿  playground.cpp
+c:\user data\dev\git\sandbox\mp\typelist.h(49): error C2027: Verwendung des undefinierten Typs "mp::tl::type_at<L,0>"
+          with
+          [
+              L=mp::tl::TypeList<>
+          ]
+  c:\user data\dev\git\sandbox\mp\typelist.h(49): note: Siehe Deklaration von "mp::tl::type_at<L,0>"
+          with
+          [
+              L=mp::tl::TypeList<>
+          ]
+  c:\user data\dev\git\sandbox\mp\thing.h(32): note: Siehe Verweis auf die Alias Vorlage-Instanziierung "type_at_t<mp::tl::TypeList<>,0>", die kompiliert wird.
+  c:\user data\dev\git\sandbox\mp\thing.h(33): note: Siehe Verweis auf die Klasse Vorlage-Instanziierung "mp::gen::thing<mp::gen::prop<3081909835,f32>,mp::gen::prop<3233089245,f32>,mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>::get_type_of_id<mp::tl::TypeList<>,3081909835>", die kompiliert wird.
+  c:\user data\dev\git\sandbox\mp\thing.h(33): note: Siehe Verweis auf die Klasse Vorlage-Instanziierung "mp::gen::thing<mp::gen::prop<3081909835,f32>,mp::gen::prop<3233089245,f32>,mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>::get_type_of_id<mp::tl::TypeList<mp::gen::prop<4074889273,f32>>,3081909835>", die kompiliert wird.
+  c:\user data\dev\git\sandbox\mp\thing.h(33): note: Siehe Verweis auf die Klasse Vorlage-Instanziierung "mp::gen::thing<mp::gen::prop<3081909835,f32>,mp::gen::prop<3233089245,f32>,mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>::get_type_of_id<mp::tl::TypeList<mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>,3081909835>", die kompiliert wird.
+  c:\user data\dev\git\sandbox\mp\thing.h(33): note: Siehe Verweis auf die Klasse Vorlage-Instanziierung "mp::gen::thing<mp::gen::prop<3081909835,f32>,mp::gen::prop<3233089245,f32>,mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>::get_type_of_id<mp::tl::TypeList<mp::gen::prop<3233089245,f32>,mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>,3081909835>", die kompiliert wird.
+  c:\user data\dev\git\sandbox\playground\playground.cpp(129): note: Siehe Verweis auf die Klasse Vorlage-Instanziierung "mp::gen::thing<mp::gen::prop<3081909835,f32>,mp::gen::prop<3233089245,f32>,mp::gen::prop<1306225195,f32>,mp::gen::prop<4074889273,f32>>::get_type_of_id<prop_list_t,3081909835>", die kompiliert wird.
+c:\user data\dev\git\sandbox\mp\typelist.h(49): error C2061: Syntaxfehler: Bezeichner "type"
+c:\user data\dev\git\sandbox\mp\thing.h(32): error C2938: "type_at_t<mp::tl::TypeList<>,0>": Spezialisierung der Aliasvorlage fehlgeschlagen
+c:\user data\dev\git\sandbox\mp\thing.h(33): error C2146: Syntaxfehler: Fehlendes ">" vor Bezeichner "type"

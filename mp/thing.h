@@ -22,13 +22,24 @@ namespace mp
 		template <class... props> class thing : public props...
 		{
 
-			template <typename L> struct get_id_list;
-
-			template <template <class ...Ts> class L, class T, u32 LID> struct get_id_list< L<>;
-
-
 		public:
+
 			using property_list = mp::tl::TypeList<props...>;
+
+			template <class L, u32 ID> struct get_type_of_id;
+			template <template <class...> class L, class ...Ts, u32 ID> struct get_type_of_id<L<Ts...>, ID>
+			{
+				using head = tl::type_at_t<L<Ts...>, static_cast<size_t>(0)>;
+				using type = std::conditional_t< std::is_same_v<std::integral_constant<u32, ID>, typename head::id_type>, typename head::value_type, typename get_type_of_id<tl::erase_t<L<Ts...>, head>, ID>::type>;
+			};
+
+
+			template <u32 PropID>
+			typename get_type_of_id<property_list, PropID>::type get() const
+			{
+				return typename get_type_of_id<property_list, PropID>::type::value;
+			}
+		
 		};
 	}
 }

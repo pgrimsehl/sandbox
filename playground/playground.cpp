@@ -118,6 +118,19 @@ int main()
 	thingy.mp::gen::prop<"Width"_crc32, f32>::value;
 	thingy.mp::gen::prop<"Height"_crc32, f32>::value;
 
+	// thingy.get<"X"_crc32>();
+	using prop_list_t = MyThing::property_list;
+	prop_list_t prop_list;
+	using head_t = mp::tl::type_at_t< prop_list_t, 0>;
+	head_t head;
+	using head_id_t = head_t::id_type;
+	head_id_t head_id;
+	bool same = std::is_same_v<std::integral_constant<u32, "X"_crc32>, head_id_t>;
+
+	using prop_t = MyThing::get_type_of_id<prop_list_t, "X"_crc32>;
+	prop_t prop;
+
+
 	bool a = mp::fn::is_baseclass_of<A, B>::value;
 	bool b = mp::fn::is_baseclass_of<A, SubA>::value;
 	bool c = mp::fn::is_baseclass_of<A, SubSubA>::value;
