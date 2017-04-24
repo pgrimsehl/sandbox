@@ -4,7 +4,9 @@
 #include "stdafx.h"
 
 #include <mp/function.h>
+#include <mp/thing.h>
 #include <mp/variant.h>
+
 #include <core/udl.h>
 
 #include <string>
@@ -12,6 +14,9 @@
 
 class A
 {
+public :
+	int myMethod() { return 0; };
+	u8 myValue = 0;
 };
 
 class B
@@ -20,6 +25,9 @@ class B
 
 class SubA : public A
 {
+public:
+	int myMethod() { return 1; };
+	std::string myValue;
 };
 
 class SubB : public B
@@ -40,8 +48,8 @@ using MyVariant = mp::variant<i32, u32, bool, std::string>;
 
 // template <class T, typename U > struct has_lala;
 // template <class T> struct has_lala<T, void> : public std::false_type {};
-// template <class T> struct has_lala<T, std::is_same<decltype(std::declval<T>().lala()), decltype(std::declval<T>().lala())>::value> : public std::true_type {};
-// template <class T> struct has_lala<T, std::is_same<T,T>> : public std::true_type {};
+// template <class T> struct has_lala<T, std::is_same<decltype(std::declval<T>().lala()), decltype(std::declval<T>().lala())>::value> : public
+// std::true_type {}; template <class T> struct has_lala<T, std::is_same<T,T>> : public std::true_type {};
 
 class HasLala
 {
@@ -82,12 +90,33 @@ using type2 = mp::fn::rename_t<typelist_pair, std::pair>;
 type2 t2;
 using type3 = mp::fn::rename_t<typelist6, std::tuple>;
 type3 t3;
-using type4 = std::conditional_t< mp::tl::contains_v<typelist0, int>, A, B >;
+using type4 = std::conditional_t<mp::tl::contains_v<typelist0, int>, A, B>;
 type4 t4;
+
+class MyThing : public mp::gen::thing<mp::gen::prop<"X"_crc32, f32>, mp::gen::prop<"Y"_crc32, f32>, mp::gen::prop<"Width"_crc32, f32>,
+									  mp::gen::prop<"Height"_crc32, f32>>
+{
+public:
+	MyThing() = default;
+};
 
 int main()
 {
 	u32 udl0 = "CRC32 UDL"_crc32;
+
+
+	SubA suba;
+
+	suba.myMethod();
+	suba.A::myMethod();
+	std::string val_suba = suba.myValue;
+	u8 val_a = suba.A::myValue;
+
+	MyThing thingy;
+	thingy.mp::gen::prop<"X"_crc32, f32>::value;
+	thingy.mp::gen::prop<"Y"_crc32, f32>::value;
+	thingy.mp::gen::prop<"Width"_crc32, f32>::value;
+	thingy.mp::gen::prop<"Height"_crc32, f32>::value;
 
 	bool a = mp::fn::is_baseclass_of<A, B>::value;
 	bool b = mp::fn::is_baseclass_of<A, SubA>::value;

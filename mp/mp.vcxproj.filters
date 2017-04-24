@@ -24,6 +24,9 @@
     <ClInclude Include="variant.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="thing.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="variant.inl">

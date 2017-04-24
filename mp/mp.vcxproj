@@ -123,6 +123,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="function.h" />
+    <ClInclude Include="thing.h" />
     <ClInclude Include="typelist.h" />
     <ClInclude Include="variant.h" />
   </ItemGroup>
