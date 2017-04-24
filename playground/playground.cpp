@@ -81,23 +81,8 @@ using type2 = mp::fn::rename_t<typelist_pair, std::pair>;
 type2 t2;
 using type3 = mp::fn::rename_t<typelist6, std::tuple>;
 type3 t3;
-
-using type4 = mp::tl::contains<typelist0, char>;
+using type4 = std::conditional_t< mp::tl::contains_v<typelist0, int>, A, B >;
 type4 t4;
-bool  c = type4::value;
-
-template <class T, class U> struct lala : public std::true_type
-{
-};
-
-struct lala2 : public lala<A,B>
-{
-};
-
-lala<A, B> l;
-bool	   c0 = lala<A, B>::value;
-lala2	  l2;
-bool	   c1 = lala2::value;
 
 int main()
 {

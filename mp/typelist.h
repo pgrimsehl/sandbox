@@ -147,6 +147,5 @@ namespace mp
 		};
 		// convenience template to access index type
 		template <class L, class T> constexpr bool contains_v = contains<L, T>::value;
-		// template <class L, class T> using contains_v = contains<L, T>::value;
 	}
 }
