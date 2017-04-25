@@ -16,7 +16,6 @@ namespace mp
 		public:
 			using value_type = T;
 			using id_type	= std::integral_constant<u32, ID>;
-			//static constexpr u32 id = id_type::value;
 			value_type value;
 		};
 
@@ -38,13 +37,20 @@ namespace mp
 				using type = typename get_type_of_id<tl::erase_t<L<Ts...>, head>, ID>::type;
 			};
 
+			template <u32 PropID> using prop_t = typename get_type_of_id<property_list, PropID>::type;
+			template <u32 PropID> using prop_value_t = typename prop_t<PropID>::value_type;
 
 			template <u32 PropID>
-			typename get_type_of_id<property_list, PropID>::type::value &get()
+			prop_value_t<PropID>& get()
 			{
-				return typename get_type_of_id<property_list, PropID>::type::value;
+				return prop_t<PropID>::value;
 			}
 		
+			template <u32 PropID>
+			const prop_value_t<PropID>& get() const
+			{
+				return prop_t<PropID>::value;
+			}
 		};
 	}
 }

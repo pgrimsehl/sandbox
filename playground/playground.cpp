@@ -93,12 +93,23 @@ type3 t3;
 using type4 = std::conditional_t<mp::tl::contains_v<typelist0, int>, A, B>;
 type4 t4;
 
-class MyThing : public mp::gen::thing<mp::gen::prop<"X"_crc32, f32>, mp::gen::prop<"Y"_crc32, f32>, mp::gen::prop<"Width"_crc32, u16>,
-									  mp::gen::prop<"Height"_crc32, u32>>
+class MyThing : public mp::gen::thing<
+	mp::gen::prop<"Name"_crc32, std::string>,
+	mp::gen::prop<"PosX"_crc32, f32>, 
+	mp::gen::prop<"PosY"_crc32, f32>, 
+	mp::gen::prop<"Width"_crc32, u16>,
+	mp::gen::prop<"Height"_crc32, u32>>
 {
 public:
 	MyThing() = default;
 };
+
+
+template <u32 ID>
+u32 get_id()
+{
+	return ID;
+}
 
 int main()
 {
@@ -113,26 +124,10 @@ int main()
 	u8 val_a = suba.A::myValue;
 
 	MyThing thingy;
-	thingy.mp::gen::prop<"X"_crc32, f32>::value;
-	thingy.mp::gen::prop<"Y"_crc32, f32>::value;
-	thingy.mp::gen::prop<"Width"_crc32, u16>::value;
-	thingy.mp::gen::prop<"Height"_crc32, u32>::value;
 
-	using prop_list_t = MyThing::property_list;
-	prop_list_t prop_list;
-	using head_t = mp::tl::type_at_t< prop_list_t, 0>;
-	head_t head;
-	using head_id_t = head_t::id_type;
-	head_id_t head_id;
-	constexpr bool same = std::is_same_v<std::integral_constant<u32, head_id_t::value>, head_id_t>;
-	using cond_t = std::conditional_t< std::is_same_v<std::integral_constant<u32, "X"_crc32>, typename head_t::id_type>, typename head_t::value_type, int>;
-	cond_t cond;
-
-
-	using prop_t = MyThing::get_type_of_id<prop_list_t, "Width"_crc32>::type;
-	prop_t prop;
-
-	f32 x = thingy.get<"X"_crc32>();
+	f32 x = thingy.get<"PosX"_crc32>();
+	u32 height = thingy.get<"Height"_crc32>();
+	thingy.get<"Name"_crc32>() = "TheThing";
 
 	bool a = mp::fn::is_baseclass_of<A, B>::value;
 	bool b = mp::fn::is_baseclass_of<A, SubA>::value;
