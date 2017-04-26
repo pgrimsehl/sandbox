@@ -15,19 +15,19 @@ namespace mp
 		// mp::tl::index_of_type
 		// --------------------------------------------------------------------------
 		// get index of a type in a type list
-		template <class L, class T> struct index_of_type_impl;
+		template <class L, class T> struct index_of_type;
 		// class V is head of list L, so index is 0
-		template <template <class...> class L, class... T, class V> struct index_of_type_impl<L<V, T...>, V>
+		template <template <class...> class L, class... T, class V> struct index_of_type<L<V, T...>, V>
 		{
 			using type = std::integral_constant<size_t, 0>;
 		};
 		// class V is not head of list L, so increment index and call recursively
-		template <template <class...> class L, class T1, class... T, class V> struct index_of_type_impl<L<T1, T...>, V>
+		template <template <class...> class L, class T1, class... T, class V> struct index_of_type<L<T1, T...>, V>
 		{
-			using type = std::integral_constant<size_t, 1 + index_of_type_impl<L<T...>, V>::type::value>;
+			using type = std::integral_constant<size_t, 1 + index_of_type<L<T...>, V>::type::value>;
 		};
-		// convenience template to access index type
-		template <class L, class V> using index_of_type = typename index_of_type_impl<L, V>::type;
+		// convenience template to access inner class type
+		template <class L, class V> using index_of_type_t = typename index_of_type<L, V>::type;
 
 		// --------------------------------------------------------------------------
 		// mp::tl::type_at
@@ -45,8 +45,26 @@ namespace mp
 			static_assert( 0 < sizeof...( Ts ), "index out of bounds" );
 			using type = typename type_at<L<Ts...>, I - 1>::type;
 		};
-		// convenience template to access index type
+		// convenience template to access inner class type
 		template <class L, size_t I> using type_at_t = typename type_at<L, I>::type;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::front_t
+		// --------------------------------------------------------------------------
+		// get fist type T type list L
+		template <class L> using front_t = typename type_at<L, 0>::type;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::back_t
+		// --------------------------------------------------------------------------
+		// get last type T in type list L
+		template <class L> struct back;
+		template <template <class...> class L, class... Ts>
+		struct back<L<Ts...>> : public type_at<L<Ts...>, sizeof...(Ts)-static_cast<size_t>(1)>
+		{
+		};
+		// convenience template to access inner class type
+		template <class L> using back_t = typename back<L>::type;
 
 		// --------------------------------------------------------------------------
 		// mp::tl::push_back
@@ -57,6 +75,7 @@ namespace mp
 		{
 			using type = L<Us..., Ts...>;
 		};
+		// convenience template to access inner class type
 		template <class L, class... Ts> using push_back_t = typename push_back<L, Ts...>::type;
 
 		// --------------------------------------------------------------------------
@@ -68,6 +87,7 @@ namespace mp
 		{
 			using type = L<Ts..., Us...>;
 		};
+		// convenience template to access inner class type
 		template <class L, class... Ts> using push_front_t = typename push_front<L, Ts...>::type;
 
 		// --------------------------------------------------------------------------
@@ -79,6 +99,7 @@ namespace mp
 		{
 			using type = L<T0s..., T1s...>;
 		};
+		// convenience template to access inner class type
 		template <class L0, class L1> using concat_t = typename concat<L0, L1>::type;
 
 		// --------------------------------------------------------------------------
@@ -101,7 +122,7 @@ namespace mp
 		{
 			using type = push_front_t<typename erase<L<Ts...>, T>::type, H>;
 		};
-		// convenience template to access index type
+		// convenience template to access inner class type
 		template <class L, class T> using erase_t = typename erase<L, T>::type;
 
 		// --------------------------------------------------------------------------
@@ -125,12 +146,12 @@ namespace mp
 			//	using type = push_front_t< l2, T >;
 			using type = push_front_t<erase_t<typename unique<L<Ts...>>::type, T>, T>;
 		};
-		// convenience template to access index type
+		// convenience template to access inner class type
 		template <class L> using unique_t = typename unique<L>::type;
 
 		// --------------------------------------------------------------------------
 		// mp::tl::contains
-		// Tests for existens of type T in L
+		// Tests for existence of type T in L
 		// --------------------------------------------------------------------------
 		template <class L, class T> struct contains;
 		// list is empty
@@ -145,7 +166,7 @@ namespace mp
 		template <template <class...> class L, class U, class... Ts, class T> struct contains<L<U, Ts...>, T> : public contains<L<Ts...>, T>
 		{
 		};
-		// convenience template to access index type
+		// convenience template to access class value
 		template <class L, class T> constexpr bool contains_v = contains<L, T>::value;
 	}
 }

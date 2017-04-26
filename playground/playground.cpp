@@ -104,6 +104,9 @@ public:
 	MyThing() = default;
 };
 
+mp::tl::front_t<typelist0> front_type;
+mp::tl::back_t<typelist0> back_type;
+
 
 template <u32 ID>
 u32 get_id()

@@ -22,7 +22,7 @@ template <class... Ts> variant<Ts...>::variant( const variant &_rhs )
 // ---------------------------------------------------------------------------
 template <class... Ts> template <class T> variant<Ts...>::variant( T &&_t )
 {
-	m_Value.m_TypeIndex = mp::tl::index_of_type<MyTypes, T>::value;
+	m_Value.m_TypeIndex = mp::tl::index_of_type_t<MyTypes, T>::value;
 	copy_constructors[m_Value.m_TypeIndex](m_Value, reinterpret_cast<const void *>(&_t));
 }
 
@@ -86,6 +86,6 @@ template <class... Ts> template <class T> bool variant<Ts...>::get( T &_value ) 
  template <class... Ts>
  template <class T, class... Args> void variant<Ts...>::emplace( Args&&... args )
 {
-	m_Value.m_TypeIndex = mp::tl::index_of_type<MyTypes, T>::value;
+	m_Value.m_TypeIndex = mp::tl::index_of_type_t<MyTypes, T>::value;
 	::new (static_cast<void *>(&m_Value.m_Storage)) T(std::forward<Args>(args)...);
 }
