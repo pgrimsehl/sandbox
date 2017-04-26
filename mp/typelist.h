@@ -60,7 +60,7 @@ namespace mp
 		// get last type T in type list L
 		template <class L> struct back;
 		template <template <class...> class L, class... Ts>
-		struct back<L<Ts...>> : public type_at<L<Ts...>, sizeof...(Ts)-static_cast<size_t>(1)>
+		struct back<L<Ts...>> : public type_at<L<Ts...>, sizeof...( Ts ) - static_cast<size_t>( 1 )>
 		{
 		};
 		// convenience template to access inner class type
@@ -126,6 +126,47 @@ namespace mp
 		template <class L, class T> using erase_t = typename erase<L, T>::type;
 
 		// --------------------------------------------------------------------------
+		// mp::tl::pop_front
+		// remove type at top of list
+		// --------------------------------------------------------------------------
+		template <class L> struct pop_front;
+		//// empty list will not be changed
+		// template <template <class...> class L> struct pop_front<L<>>
+		//{
+		//	using type = L<>;
+		//};
+		// T is at top of list
+		template <template <class...> class L, class... Ts, class T> struct pop_front<L<T, Ts...>>
+		{
+			using type = L<Ts...>;
+		};
+		// convenience template to access inner class type
+		template <class L> using pop_front_t = typename pop_front<L>::type;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::pop_back
+		// remove type at end of list
+		// --------------------------------------------------------------------------
+		template <class L> struct pop_back;
+		//// empty list will not be changed
+		// template <template <class...> class L> struct pop_back<L<>>
+		//{
+		//	using type = L<>;
+		//};
+		// list has two elements
+		template <template <class...> class L, class T, class U> struct pop_back<L<T, U>>
+		{
+			using type = L<T>;
+		};
+		// copy all elements but the last one
+		template <template <class...> class L, class... Ts, class T> struct pop_back<L<T, Ts...>>
+		{
+			using type = push_front_t<typename pop_back<L<Ts...>>::type, T>;
+		};
+		// convenience template to access inner class type
+		template <class L> using pop_back_t = typename pop_back<L>::type;
+
+		// --------------------------------------------------------------------------
 		// mp::tl::unique
 		// erase all but one instance of any type T from L
 		// --------------------------------------------------------------------------
@@ -167,6 +208,7 @@ namespace mp
 		{
 		};
 		// convenience template to access class value
+		// NOTE: variable templates are a feature of C++14
 		template <class L, class T> constexpr bool contains_v = contains<L, T>::value;
 	}
 }
