@@ -74,7 +74,7 @@ template <class... Ts> template <class T> void variant<Ts...>::set( const T &_va
 // ------------------------------------------------------------------------
 template <class... Ts> template <class T> bool variant<Ts...>::get( T &_value ) const
 {
-	if ( index_of_type<MyTypes, T>::value == m_Value.m_TypeIndex )
+	if ( mp::tl::index_of_type<MyTypes, T>::value == m_Value.m_TypeIndex )
 	{
 		_value = *reinterpret_cast<const T *>( &m_Value.m_Storage );
 		return true;
