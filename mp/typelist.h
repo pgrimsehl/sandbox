@@ -264,5 +264,27 @@ namespace mp
 		// convenience template to access inner class type
 		template <class L, size_t I, class T> using replace_at_t = typename replace_at<L, I, T>::type;
 
+		// --------------------------------------------------------------------------
+		// mp::tl::replace
+		// --------------------------------------------------------------------------
+		// replaces all occurrences of type T with type U in type list L
+		template <class L, class T, class U> struct replace;
+		// list is empty
+		template <template <class...> class L, class T, class U> struct replace<L<>, T, U>
+		{
+			using type = L<>;
+		};
+		// T is at front, replace T and recurse
+		template <template <class...> class L, class... Ts, class T, class U> struct replace<L<T, Ts...>, T, U>
+		{
+			using type = push_front_t<typename replace<L<Ts...>, T, U>::type, U>;
+		};
+		// T is not at front, keep type and recurse
+		template <template <class...> class L, class... Ts, class T, class U, class V> struct replace<L<V, Ts...>, T, U>
+		{
+			using type = push_front_t<typename replace<L<Ts...>, T, U>::type, V>;
+		};
+		// convenience template to access inner class type
+		template <class L, class T, class U> using replace_t = typename replace<L, T, U>::type;
 	}
 }
