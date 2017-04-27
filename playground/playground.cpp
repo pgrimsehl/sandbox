@@ -109,6 +109,8 @@ mp::tl::front_t<typelist0> front_type;
 mp::tl::back_t<typelist0> back_type;
 mp::tl::pop_front_t<typelist0> pop_front_type;
 mp::tl::pop_back_t<typelist0> pop_back_type;
+mp::tl::inverse_t<typelist6> typelist6_inverse;
+mp::tl::replace_at_t<typelist6, 5, MyThing> typelist6_replaced5;
 
 template <u32 ID>
 u32 get_id()

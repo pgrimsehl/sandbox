@@ -210,5 +210,59 @@ namespace mp
 		// convenience template to access class value
 		// NOTE: variable templates are a feature of C++14
 		template <class L, class T> constexpr bool contains_v = contains<L, T>::value;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::inverse
+		// Inverses the order of elements in L
+		// --------------------------------------------------------------------------
+		template <class L> struct inverse;
+		// list is empty
+		template <template <class...> class L> struct inverse<L<>>
+		{
+			using type = L<>;
+		};
+		// list has one element
+		template <template <class...> class L, class T> struct inverse<L<T>>
+		{
+			using type = L<T>;
+		};
+		// list has two elements
+		template <template <class...> class L, class T, class U> struct inverse<L<T, U>>
+		{
+			using type = L<U, T>;
+		};
+		// recurse through list with at least 3 elements
+		template <template <class...> class L, class... Ts> struct inverse<L<Ts...>>
+		{
+		private:
+			using front_type = front_t<L<Ts...>>;
+			using back_type  = back_t<L<Ts...>>;
+
+		public:
+			using type = push_front_t<push_back_t<typename inverse<pop_front_t<pop_back_t<L<Ts...>>>>::type, front_type>, back_type>;
+		};
+		// convenience template to access class value
+		template <class L> using inverse_t = typename inverse<L>::type;
+
+
+		// --------------------------------------------------------------------------
+		// mp::tl::replace_at
+		// --------------------------------------------------------------------------
+		// replaces type at index i with T in type list L
+		template <class L, size_t, class T> struct replace_at;
+		// index is 0, replace head of list
+		template <template <class...> class L, class... Ts, class T, class U> struct replace_at<L<U, Ts...>, 0, T>
+		{
+			using type = L<T, Ts...>;
+		};
+		// index is > 0, so call recursively
+		template <template <class...> class L, class... Ts, size_t I, class T, class U> struct replace_at<L<U, Ts...>, I, T>
+		{
+			static_assert(0 < sizeof...(Ts), "index out of bounds");
+			using type = push_front_t<typename replace_at<L<Ts...>, I - 1, T>::type, U>;
+		};
+		// convenience template to access inner class type
+		template <class L, size_t I, class T> using replace_at_t = typename replace_at<L, I, T>::type;
+
 	}
 }
