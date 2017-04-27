@@ -126,6 +126,25 @@ namespace mp
 		template <class L, class T> using erase_t = typename erase<L, T>::type;
 
 		// --------------------------------------------------------------------------
+		// mp::tl::erase_at
+		// --------------------------------------------------------------------------
+		// removes type at index from type list L
+		template <class L, size_t> struct erase_at;
+		// index is 0, remove head of list
+		template <template <class...> class L, class... Ts, class T> struct erase_at<L<T, Ts...>, 0>
+		{
+			using type = L<Ts...>;
+		};
+		// index is > 0, so call recursively
+		template <template <class...> class L, class... Ts, size_t I, class T> struct erase_at<L<T, Ts...>, I>
+		{
+			static_assert(0 < sizeof...(Ts), "index out of bounds");
+			using type = push_front_t<typename replace_at<L<Ts...>, I - 1, T>::type, U>;
+		};
+		// convenience template to access inner class type
+		template <class L, size_t I, class T> using replace_at_t = typename replace_at<L, I, T>::type;
+
+		// --------------------------------------------------------------------------
 		// mp::tl::pop_front
 		// remove type at top of list
 		// --------------------------------------------------------------------------
