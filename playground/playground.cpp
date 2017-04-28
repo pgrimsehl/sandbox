@@ -89,16 +89,16 @@ typelist5 list5;
 using typelist6 = mp::tl::push_back_t<typelist0, A, B, SubA, SubB>;
 typelist6 list6;
 
-//using type0 = mp::tl::type_at_t<typelist0, 2>;
-//type0 t0;
-//using type1 = mp::fn::transform_t<typelist6, std::tuple>;
-//type1 t1;
-//using type2 = mp::fn::rename_t<typelist_pair, std::pair>;
-//type2 t2;
-//using type3 = mp::fn::rename_t<typelist6, std::tuple>;
-//type3 t3;
-//using type4 = std::conditional_t<mp::tl::contains_v<typelist0, int>, A, B>;
-//type4 t4;
+// using type0 = mp::tl::type_at_t<typelist0, 2>;
+// type0 t0;
+// using type1 = mp::fn::transform_t<typelist6, std::tuple>;
+// type1 t1;
+// using type2 = mp::fn::rename_t<typelist_pair, std::pair>;
+// type2 t2;
+// using type3 = mp::fn::rename_t<typelist6, std::tuple>;
+// type3 t3;
+// using type4 = std::conditional_t<mp::tl::contains_v<typelist0, int>, A, B>;
+// type4 t4;
 
 class MyThing : public mp::gen::thing<mp::gen::prop<"Name"_crc32, std::string>, mp::gen::prop<"PosX"_crc32, f32>, mp::gen::prop<"PosY"_crc32, f32>,
 									  mp::gen::prop<"Width"_crc32, u16>, mp::gen::prop<"Height"_crc32, u32>>
@@ -120,12 +120,11 @@ mp::tl::erase_at_t<typelist2, 2>									typelist2_erased_2;
 mp::tl::insert_at_t<decltype( typelist2_erased_2 ), 2, erased_type> typelist2_restored;
 mp::tl::swap_t<typelist2, 2, 3>										typelist2_swap;
 
-namespace sort_func
+struct sort_by_size
 {
-	template <class T, class U>
-	struct select
+	template <class T, class U> struct select
 	{
-		using type = typename std::conditional<(sizeof(T) > sizeof(U)), T, U>::type;
+		using type = typename std::conditional<( sizeof( T ) > sizeof( U ) ), T, U>::type;
 	};
 };
 
@@ -133,8 +132,8 @@ namespace mp
 {
 	namespace tl
 	{
-		template <class L> struct sort;
-		template <template <class...> class L> struct sort<L<>>
+		template <class L, class P> struct sort;
+		template <template <class...> class L, class P> struct sort<L<>, P>
 		{
 			using type = L<>;
 		};
@@ -163,36 +162,65 @@ namespace mp
 		//	// template <class L, class T> struct find_smallest_t = find_smallest<L,T>::type;
 		//};
 
-		template <template <class...> class L, class... Ts> struct sort<L<Ts...>>
+		template <template <class...> class L, class... Ts, class P> struct sort<L<Ts...>, P>
 		{
 			template <class M, size_t I, size_t J> struct apply_order;
 			template <template <class...> class M, class... Us, size_t I> struct apply_order<M<Us...>, I, I>
 			{
 				using type = M<Us...>;
 			};
+			template <template <class...> class M, size_t I, size_t J> struct apply_order<M<>, I, J>
+			{
+				using type = M<>;
+			};
 			template <template <class...> class M, class... Us, size_t I, size_t J> struct apply_order<M<Us...>, I, J>
 			{
+			public:
 				using type_at_i = type_at_t<M<Us...>, I>;
 				using type_at_j = type_at_t<M<Us...>, J>;
 
-				using selected_type = typename sort_func::select<type_at_i, type_at_j>::type;
+				using selected_type = typename P::template select<type_at_i, type_at_j>::type;
 
 			public:
-				using type = typename std::conditional<std::is_same<selected_type, type_at_i>::value, 
-					typename apply_order<M<Us...>, I, J - 1>::type, 
-					typename apply_order<swap_t<M<Us...>, I, J>, I, J - 1>::type>::type;
+				using type = typename std::conditional<std::is_same<selected_type, type_at_i>::value, typename apply_order<M<Us...>, I, J - 1>::type,
+													   typename apply_order<swap_t<M<Us...>, I, J>, I, J - 1>::type>::type;
 			};
 
-			using type = typename apply_order<L<Ts...>, 0, sizeof...(Ts) - static_cast<size_t>(1)>::type;
+			using type = typename apply_order<L<Ts...>, 0, sizeof...( Ts ) - static_cast<size_t>( 1 )>::type;
+			//using type = typename apply_order<L<Ts...>, 0, sizeof...( Ts ) - static_cast<size_t>( 1 )>;
 
 			// template <class L, class T> struct find_smallest_t = find_smallest<L,T>::type;
 		};
 	}
 }
 
-using selector = sort_func::select<int, int>;
+using selector = sort_by_size::select<int, int>;
 
-mp::tl::sort<typelist2>::type sorted;
+struct container
+{
+	template <class T, class U> struct select
+	{
+		using type = typename std::conditional<( sizeof( T ) > sizeof( U ) ), T, U>::type;
+	};
+
+	struct simple
+	{
+	};
+};
+
+// example how to properly use typename and template keywords
+template <class T, class U, class C> struct user
+{
+	// C::select<T,U> is a dependent tye, so use typename
+	// C::select<T,U> is a template, so specify template for the compiler
+	using type0 = typename C::template select<T,U>;
+	using type1 = typename C::simple;
+};
+
+//container::select<char, short>::type dubi;
+user<char, short, container>::type0   schubi;
+
+mp::tl::sort<typelist2, sort_by_size> sorted;
 
 int main()
 {
