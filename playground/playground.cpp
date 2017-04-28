@@ -116,6 +116,7 @@ mp::tl::replace_t<decltype(typelist2_replaced), short, i64> typelist2_replaced_r
 using erased_type = mp::tl::type_at_t<typelist2, 2>;
 mp::tl::erase_at_t<typelist2, 2> typelist2_erased_2;
 mp::tl::insert_at_t<decltype(typelist2_erased_2), 2, erased_type> typelist2_restored;
+mp::tl::swap_t<typelist2, 2, 3> typelist2_swap;
 
 template <u32 ID>
 u32 get_id()

@@ -168,8 +168,7 @@ namespace mp
 			using type = L<T, U, Ts...>;
 		};
 		// index is > 0, so call recursively
-		template <template <class...> class L, class... Ts, size_t I, class T, class U >
-		struct insert_at<L<U, Ts...>, I, T>
+		template <template <class...> class L, class... Ts, size_t I, class T, class U> struct insert_at<L<U, Ts...>, I, T>
 		{
 			static_assert( 0 < sizeof...( Ts ), "index out of bounds" );
 			using type = push_front_t<typename insert_at<L<Ts...>, I - 1, T>::type, U>;
@@ -337,5 +336,21 @@ namespace mp
 		};
 		// convenience template to access inner class type
 		template <class L, class T, class U> using replace_t = typename replace<L, T, U>::type;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::swap
+		// Swaps elements at index I and J in typelist L
+		// --------------------------------------------------------------------------
+		template <class L, size_t I, size_t J> struct swap
+		{
+		private:
+			using j_type = type_at_t<L, J>;
+			using l_temp = replace_at_t<L, J, type_at_t<L, I>>;
+
+		public:
+			using type = replace_at_t<l_temp, I, j_type>;
+		};
+		// convenience template to access inner class type
+		template <class L, size_t I, size_t J> using swap_t = typename swap<L, I, J>::type;
 	}
 }
