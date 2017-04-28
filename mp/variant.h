@@ -31,7 +31,7 @@ namespace mp
 		};
 
 		using TypeCount   = typename std::integral_constant<size_t, sizeof...( Ts )>;
-		using MyTypes	 = mp::tl::TypeList<Ts...>;
+		using MyTypes	 = mp::tl::typelist<Ts...>;
 		using ValueHolder = ValueHolderType<Ts...>;
 
 		template <class T> struct TypeHelper

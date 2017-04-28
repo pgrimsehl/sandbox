@@ -66,8 +66,8 @@ public:
 // auto lala_test0 = has_lala<HasLala>::value;
 // auto lala_test1 = has_lala<DoesntHaveLala>::value;
 
-using typelist_pair = mp::tl::TypeList<char, short>;
-using typelist0		= mp::tl::TypeList<char, short, int>;
+using typelist_pair = mp::tl::typelist<char, short>;
+using typelist0		= mp::tl::typelist<char, short, int>;
 using typelist1		= mp::tl::push_back_t<typelist0>;
 
 typelist0 list0;
@@ -113,6 +113,9 @@ mp::tl::inverse_t<typelist6> typelist6_inverse;
 mp::tl::replace_at_t<typelist6, 5, MyThing> typelist6_replaced5;
 mp::tl::replace_t<typelist2, char, MyThing> typelist2_replaced;
 mp::tl::replace_t<decltype(typelist2_replaced), short, i64> typelist2_replaced_replaced;
+using erased_type = mp::tl::type_at_t<typelist2, 2>;
+mp::tl::erase_at_t<typelist2, 2> typelist2_erased_2;
+mp::tl::insert_at_t<decltype(typelist2_erased_2), 2, erased_type> typelist2_restored;
 
 template <u32 ID>
 u32 get_id()

@@ -24,7 +24,7 @@ namespace mp
 
 		public:
 
-			using property_list = mp::tl::TypeList<props...>;
+			using property_list = mp::tl::typelist<props...>;
 
 			template <class L, u32 ID> struct get_type_of_id;
 			template <template <class...> class L, class ...Ts, template <u32 TID, class> class T, class U, u32 ID> struct get_type_of_id<L<T<ID,U>,Ts...>, ID>

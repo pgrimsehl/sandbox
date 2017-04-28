@@ -5,11 +5,22 @@ namespace mp
 	namespace tl
 	{
 		// --------------------------------------------------------------------------
-		// mp::tl::TypeList
+		// mp::tl::typelist
 		// --------------------------------------------------------------------------
-		template <class... Types> struct TypeList
+		template <class... Types> struct typelist
 		{
 		};
+
+		// --------------------------------------------------------------------------
+		// mp::tl::list_size
+		// Size of a typelist (number of template parameters)
+		// --------------------------------------------------------------------------
+		template <class L> struct list_size;
+		template <template <class...> class L, class... Ts> struct list_size<L<Ts...>> : public std::integral_constant<size_t, sizeof...( Ts )>
+		{
+		};
+		// NOTE: variable templates are a feature of C++14
+		template <class L> constexpr bool list_size_v = list_size<L>::value;
 
 		// --------------------------------------------------------------------------
 		// mp::tl::index_of_type
@@ -138,11 +149,33 @@ namespace mp
 		// index is > 0, so call recursively
 		template <template <class...> class L, class... Ts, size_t I, class T> struct erase_at<L<T, Ts...>, I>
 		{
-			static_assert(0 < sizeof...(Ts), "index out of bounds");
-			using type = push_front_t<typename replace_at<L<Ts...>, I - 1, T>::type, U>;
+			static_assert( 0 < sizeof...( Ts ), "index out of bounds" );
+			using type = push_front_t<typename erase_at<L<Ts...>, I - 1>::type, T>;
 		};
 		// convenience template to access inner class type
-		template <class L, size_t I, class T> using replace_at_t = typename replace_at<L, I, T>::type;
+		template <class L, size_t I> using erase_at_t = typename erase_at<L, I>::type;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::insert_at
+		// --------------------------------------------------------------------------
+		// Inserts type T at index I in type list L, moving element at position I and all
+		// subsequent elements by one towards the end of the list
+		template <class L, size_t, class T> struct insert_at;
+		// index is 0, insert at top of list
+		// NOTE: class U is used here to resolve ambiguity with the recursive specialization
+		template <template <class...> class L, class... Ts, class T, class U> struct insert_at<L<U, Ts...>, 0, T>
+		{
+			using type = L<T, U, Ts...>;
+		};
+		// index is > 0, so call recursively
+		template <template <class...> class L, class... Ts, size_t I, class T, class U >
+		struct insert_at<L<U, Ts...>, I, T>
+		{
+			static_assert( 0 < sizeof...( Ts ), "index out of bounds" );
+			using type = push_front_t<typename insert_at<L<Ts...>, I - 1, T>::type, U>;
+		};
+		// convenience template to access inner class type
+		template <class L, size_t I, class T> using insert_at_t = typename insert_at<L, I, T>::type;
 
 		// --------------------------------------------------------------------------
 		// mp::tl::pop_front
@@ -263,7 +296,6 @@ namespace mp
 		// convenience template to access class value
 		template <class L> using inverse_t = typename inverse<L>::type;
 
-
 		// --------------------------------------------------------------------------
 		// mp::tl::replace_at
 		// --------------------------------------------------------------------------
@@ -277,7 +309,7 @@ namespace mp
 		// index is > 0, so call recursively
 		template <template <class...> class L, class... Ts, size_t I, class T, class U> struct replace_at<L<U, Ts...>, I, T>
 		{
-			static_assert(0 < sizeof...(Ts), "index out of bounds");
+			static_assert( 0 < sizeof...( Ts ), "index out of bounds" );
 			using type = push_front_t<typename replace_at<L<Ts...>, I - 1, T>::type, U>;
 		};
 		// convenience template to access inner class type
