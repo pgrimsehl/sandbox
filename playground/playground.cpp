@@ -124,7 +124,7 @@ struct sort_by_size
 {
 	template <class T, class U> struct select
 	{
-		using type = typename std::conditional<( sizeof( T ) > sizeof( U ) ), T, U>::type;
+		using type = typename std::conditional<( sizeof( T ) < sizeof( U ) ), T, U>::type;
 	};
 };
 
@@ -132,6 +132,22 @@ namespace mp
 {
 	namespace tl
 	{
+
+		template <class L, class P> struct first_element_of_ordered_list;
+		template <template <class...> class L, class T, class P> struct first_element_of_ordered_list<L<T>, P>
+		{
+			using type = T;
+		};
+		template <template <class...> class L, class... Ts, class U, class T, class P> struct first_element_of_ordered_list<L<T, U, Ts...>, P>
+		{
+			using smaller_type = typename P::template select<T,U>::type;
+			using recurse_list = first_element_of_ordered_list<L<smaller_type, Ts...>, P>;
+
+		public:
+			using type = typename recurse_list::type;
+		};
+		template <class L, class P> using first_element_of_ordered_list_t = typename first_element_of_ordered_list<L, P>::type;
+
 		template <class L, class P> struct sort;
 		template <template <class...> class L, class P> struct sort<L<>, P>
 		{
@@ -182,12 +198,14 @@ namespace mp
 				using selected_type = typename P::template select<type_at_i, type_at_j>::type;
 
 			public:
-				using type = typename std::conditional<std::is_same<selected_type, type_at_i>::value, typename apply_order<M<Us...>, I, J - 1>::type,
-													   typename apply_order<swap_t<M<Us...>, I, J>, I, J - 1>::type>::type;
+				// using type = typename std::conditional<std::is_same<selected_type, type_at_i>::value, typename apply_order<M<Us...>, I, J -
+				// 1>::type,
+				// typename apply_order<swap_t<M<Us...>, I, J>, I, J - 1>::type>::type;
+				using type = typename apply_order<M<Us...>, I, J - 1>::type;
 			};
 
 			using type = typename apply_order<L<Ts...>, 0, sizeof...( Ts ) - static_cast<size_t>( 1 )>::type;
-			//using type = typename apply_order<L<Ts...>, 0, sizeof...( Ts ) - static_cast<size_t>( 1 )>;
+			// using type = typename apply_order<L<Ts...>, 0, sizeof...( Ts ) - static_cast<size_t>( 1 )>;
 
 			// template <class L, class T> struct find_smallest_t = find_smallest<L,T>::type;
 		};
@@ -213,14 +231,18 @@ template <class T, class U, class C> struct user
 {
 	// C::select<T,U> is a dependent tye, so use typename
 	// C::select<T,U> is a template, so specify template for the compiler
-	using type0 = typename C::template select<T,U>;
+	using type0 = typename C::template select<T, U>;
 	using type1 = typename C::simple;
 };
 
-//container::select<char, short>::type dubi;
-user<char, short, container>::type0   schubi;
+// container::select<char, short>::type dubi;
+user<char, short, container>::type0 schubi;
 
-mp::tl::sort<typelist2, sort_by_size> sorted;
+mp::tl::first_element_of_ordered_list_t<typelist0, sort_by_size> dada;
+mp::tl::first_element_of_ordered_list_t<mp::tl::typelist<char>, sort_by_size> dada0;
+//mp::tl::first_element_of_ordered_list_t<mp::tl::typelist<>> dada1;
+
+//mp::tl::sort<typelist2, sort_by_size> sorted;
 
 int main()
 {
