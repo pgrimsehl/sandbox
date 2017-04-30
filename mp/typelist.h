@@ -114,6 +114,29 @@ namespace mp
 		template <class L0, class L1> using concat_t = typename concat<L0, L1>::type;
 
 		// --------------------------------------------------------------------------
+		// mp::tl::split_at
+		// Splits list L at index I, resulting in list L0 containing indices [0...I-1] and list L1 containing the rest
+		// --------------------------------------------------------------------------
+		template <class L, size_t I> struct split_at;
+		template <template <class...> class L, class... Ts, class T> struct split_at<L<T, Ts...>, 0>
+		{
+			using type0 = L<>;
+			using type1 = L<T, Ts...>;
+		};
+		template <template <class...> class L, class... Ts, class T, size_t I> struct split_at<L<T, Ts...>, I>
+		{
+		private:
+			using recurse_list = split_at<L<Ts...>, I - static_cast<size_t>(1)>;
+		public:
+			using type0 = push_front_t<typename recurse_list::type0, T>;
+			using type1 = typename recurse_list::type1;
+
+		};
+		// convenience template to access inner class type
+		template <class L, size_t I> using split_at_t0 = typename split_at<L, I>::type0;
+		template <class L, size_t I> using split_at_t1 = typename split_at<L, I>::type1;
+
+		// --------------------------------------------------------------------------
 		// mp::tl::erase
 		// erase type T from L
 		// --------------------------------------------------------------------------
@@ -400,18 +423,17 @@ namespace mp
 		template <class L, template <typename, typename> class P>
 		using first_element_of_ordered_list_t = typename first_element_of_ordered_list<L, P>::type;
 
-		template <class L, template <typename, typename> class P> struct sort;
-		template <template <class...> class L, template <typename, typename> class P> struct sort<L<>, P>
-		{
-			using type = L<>;
-		};
-
 		// --------------------------------------------------------------------------
 		// mp::tl::sort
 		// Sort the list L using predicate P
 		// P must be a template with two template type parameters T and U and define an
 		// inner type 'type' that contains either T or U
 		// --------------------------------------------------------------------------
+		template <class L, template <typename, typename> class P> struct sort;
+		template <template <class...> class L, template <typename, typename> class P> struct sort<L<>, P>
+		{
+			using type = L<>;
+		};
 		template <template <class...> class L, class... Ts, template <typename, typename> class P> struct sort<L<Ts...>, P>
 		{
 			using first_element = first_element_of_ordered_list_t<L<Ts...>, P>;
@@ -420,7 +442,6 @@ namespace mp
 		public:
 			using type = push_front_t<typename sort<next_list, P>::type, first_element>;
 		};
-
 		template <class L, template <typename, typename> class P> using sort_t = typename sort<L, P>::type;
 	}
 }

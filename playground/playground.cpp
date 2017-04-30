@@ -125,6 +125,8 @@ template <class T, class U> struct sort_by_size
 	using type = typename std::conditional<( sizeof( T ) < sizeof( U ) ), T, U>::type;
 };
 mp::tl::sort_t<typelist2, sort_by_size> sorted;
+mp::tl::split_at_t0< typelist2, 4> splitted_left;
+mp::tl::split_at_t1< typelist2, 4> splitted_right;
 
 int main()
 {
