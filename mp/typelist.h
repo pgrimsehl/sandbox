@@ -250,10 +250,10 @@ namespace mp
 		//{
 		//	using type = L<>;
 		//};
-		// list has two elements
-		template <template <class...> class L, class T, class U> struct pop_back<L<T, U>>
+		// list has oen element
+		template <template <class...> class L, class T> struct pop_back<L<T>>
 		{
-			using type = L<T>;
+			using type = L<>;
 		};
 		// copy all elements but the last one
 		template <template <class...> class L, class... Ts, class T> struct pop_back<L<T, Ts...>>
