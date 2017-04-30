@@ -127,6 +127,7 @@ template <class T, class U> struct sort_by_size
 mp::tl::sort_t<typelist2, sort_by_size> sorted;
 mp::tl::split_at_t0< typelist2, 4> splitted_left;
 mp::tl::split_at_t1< typelist2, 4> splitted_right;
+mp::tl::replace_first_t< typelist2, int, u64> replaced_first;
 
 int main()
 {

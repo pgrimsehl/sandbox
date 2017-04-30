@@ -384,6 +384,29 @@ namespace mp
 		template <class L, class T, class U> using replace_t = typename replace<L, T, U>::type;
 
 		// --------------------------------------------------------------------------
+		// mp::tl::replace_first
+		// Replaces the first occurrence of type T with type U in type list L
+		// --------------------------------------------------------------------------
+		template <class L, class T, class U> struct replace_first;
+		// list is empty
+		template <template <class...> class L, class T, class U> struct replace_first<L<>, T, U>
+		{
+			using type = L<>;
+		};
+		// T is at front, replace T and stop
+		template <template <class...> class L, class... Ts, class T, class U> struct replace_first<L<T, Ts...>, T, U>
+		{
+			using type = L<U, Ts...>;
+		};
+		// T is not at front, keep type and recurse
+		template <template <class...> class L, class... Ts, class T, class U, class V> struct replace_first<L<V, Ts...>, T, U>
+		{
+			using type = push_front_t<typename replace_first<L<Ts...>, T, U>::type, V>;
+		};
+		// convenience template to access inner class type
+		template <class L, class T, class U> using replace_first_t = typename replace_first<L, T, U>::type;
+
+		// --------------------------------------------------------------------------
 		// mp::tl::swap
 		// Swaps elements at index I and J in typelist L
 		// --------------------------------------------------------------------------
