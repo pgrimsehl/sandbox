@@ -137,6 +137,29 @@ namespace mp
 		template <class L, class T> using erase_t = typename erase<L, T>::type;
 
 		// --------------------------------------------------------------------------
+		// mp::tl::erase_first
+		// erase the first occurence of type T from L
+		// --------------------------------------------------------------------------
+		template <class L, class T> struct erase_first;
+		// list is empty
+		template <template <class...> class L, class T> struct erase_first<L<>, T>
+		{
+			using type = L<>;
+		};
+		// class T is head of list L
+		template <template <class...> class L, class... Ts, class T> struct erase_first<L<T, Ts...>, T>
+		{
+			using type = typename L<Ts...>;
+		};
+		// class T is not head of list L, so call recursively
+		template <template <class...> class L, class H, class... Ts, class T> struct erase_first<L<H, Ts...>, T>
+		{
+			using type = push_front_t<typename erase_first<L<Ts...>, T>::type, H>;
+		};
+		// convenience template to access inner class type
+		template <class L, class T> using erase_first_t = typename erase_first<L, T>::type;
+
+		// --------------------------------------------------------------------------
 		// mp::tl::erase_at
 		// --------------------------------------------------------------------------
 		// removes type at index from type list L
@@ -352,5 +375,52 @@ namespace mp
 		};
 		// convenience template to access inner class type
 		template <class L, size_t I, size_t J> using swap_t = typename swap<L, I, J>::type;
+
+		// --------------------------------------------------------------------------
+		// mp::tl::first_element_of_ordered_list
+		// determines the type that would be the first element of the sorted list L
+		// when sort predicate P is applied
+		// P must be a template with two template type parameters T and U and define an
+		// inner type 'type' that contains either T or U
+		// --------------------------------------------------------------------------
+		template <class L, template <typename, typename> class P> struct first_element_of_ordered_list;
+		template <template <class...> class L, class T, template <typename, typename> class P> struct first_element_of_ordered_list<L<T>, P>
+		{
+			using type = T;
+		};
+		template <template <class...> class L, class... Ts, class U, class T, template <typename, typename> class P>
+		struct first_element_of_ordered_list<L<T, U, Ts...>, P>
+		{
+			using smaller_type = typename P<T, U>::type;
+			using recurse_list = first_element_of_ordered_list<L<smaller_type, Ts...>, P>;
+
+		public:
+			using type = typename recurse_list::type;
+		};
+		template <class L, template <typename, typename> class P>
+		using first_element_of_ordered_list_t = typename first_element_of_ordered_list<L, P>::type;
+
+		template <class L, template <typename, typename> class P> struct sort;
+		template <template <class...> class L, template <typename, typename> class P> struct sort<L<>, P>
+		{
+			using type = L<>;
+		};
+
+		// --------------------------------------------------------------------------
+		// mp::tl::sort
+		// Sort the list L using predicate P
+		// P must be a template with two template type parameters T and U and define an
+		// inner type 'type' that contains either T or U
+		// --------------------------------------------------------------------------
+		template <template <class...> class L, class... Ts, template <typename, typename> class P> struct sort<L<Ts...>, P>
+		{
+			using first_element = first_element_of_ordered_list_t<L<Ts...>, P>;
+			using next_list		= erase_first_t<L<Ts...>, first_element>;
+
+		public:
+			using type = push_front_t<typename sort<next_list, P>::type, first_element>;
+		};
+
+		template <class L, template <typename, typename> class P> using sort_t = typename sort<L, P>::type;
 	}
 }
