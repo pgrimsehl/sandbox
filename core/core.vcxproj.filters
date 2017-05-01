@@ -24,5 +24,13 @@
     <ClInclude Include="udl_crc32.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="any.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="any.inl">
+      <Filter>Headerdateien</Filter>
+    </None>
   </ItemGroup>
 </Project>

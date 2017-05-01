@@ -126,9 +126,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="any.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="udl.h" />
     <ClInclude Include="udl_crc32.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="any.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
