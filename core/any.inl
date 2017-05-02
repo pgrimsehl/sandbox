@@ -53,7 +53,7 @@ namespace core
 
 	bool any::has_value() const
 	{
-		return false;
+		return ( nullptr != m_VTable );
 	}
 
 	const type_info &any::type() const
