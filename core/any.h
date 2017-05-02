@@ -4,24 +4,26 @@
 
 namespace core
 {
-	class any
+	// partial implementation of std::any for C++11
+	// (See http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4617.pdf, class any, pp54, for specification)
+	class any final
 	{
 	public:
 		constexpr any();
-		any( const any &other );
-		any( any &&other );
-		template <class ValueType> any( ValueType &&value );
+		any( const any &_rhs );
+		any( any &&_rhs );
+		template <class T, typename = typename std::enable_if<!std::is_same<typename std::decay<T>::type, any>::value>::type> any( T &&_value );
 
-		any &							   operator=( const any &rhs );
-		any &							   operator=( any &&rhs );
-		template <typename ValueType> any &operator=( ValueType &&rhs );
+		any &					   operator=( const any &_rhs );
+		any &					   operator=( any &&_rhs );
+		template <typename T> any &operator=( T &&_rhs );
 
 		~any();
 
 		void reset();
 		void swap( any &other );
 
-		bool			 has_value() const;
+		bool			 empty() const;
 		const type_info &type() const;
 
 	private:
@@ -93,10 +95,40 @@ namespace core
 			struct vtable
 			{
 				const type_info &( *type )();
+				void ( *copy )( storage &_dst, const storage &_src );
 				void ( *move )( storage &_dst, storage &_src );
 				void ( *swap )( storage &_dst, storage &_src );
-				void ( *copy )( storage &_dst, const storage &_src );
 				void ( *destroy )( storage &_dst );
+			};
+
+			// this is the type-dependent method set for heap locally allocated values
+			template <class T> struct local_value
+			{
+				static const type_info &type()
+				{
+					return typeid( T );
+				}
+				// construct a new object using T's copy constructor
+				static void copy( storage &_dst, const storage &_src )
+				{
+					new ( &_dst.local ) T( reinterpret_cast<const T &>( _src.local ) );
+				}
+				// construct a new object using T's move constructor
+				static void move( storage &_dst, storage &_src )
+				{
+					new ( &_dst.local ) T( std::move( reinterpret_cast<T &>( _src.local ) ) );
+					destroy( _src );
+				}
+				// exchange values using std::swap
+				static void swap( storage &_dst, storage &_src )
+				{
+					std::swap( reinterpret_cast<T &>( _dst.local ), reinterpret_cast<T &>( _src.local ) );
+				}
+				// explicit call to T's destructor
+				static void destroy( storage &_dst )
+				{
+					reinterpret_cast<T &>( _dst.local ).~T();
+				}
 			};
 
 			// this is the type-dependent method set for heap allocated values
@@ -105,6 +137,11 @@ namespace core
 				static const type_info &type()
 				{
 					return typeid( T );
+				}
+				// construct a new object on the heap using T's copy constructor
+				static void copy( storage &_dst, const storage &_src )
+				{
+					_dst.heap = new T( *reinterpret_cast<const T *>( _src.heap ) );
 				}
 				// move the the heap pointer
 				static void move( storage &_dst, storage &_src )
@@ -117,25 +154,20 @@ namespace core
 				{
 					std::swap( _dst.heap, _src.heap );
 				}
-				// construct a new object using T's copy constructor
-				static void copy( storage &_dst, const storage &_src )
-				{
-					_dst.heap = new T( *reinterpret_cast<const T *>( _src.heap ) );
-				}
+				// delete the heap object
 				static void destroy( storage &_dst )
 				{
 					delete reinterpret_cast<T *>( _dst.heap );
+					_dst.heap = nullptr;
 				}
 			};
 
 			// helper template to determine if a value should be allocated on the heap
-			// TODO: returns true in every case
-			template <class T>
-			struct allocate_on_heap : public std::true_type
+			// TODO: T's move constructor must not throw, T's alignment must match storage alignment
+			template <class T> struct allocate_on_heap : public std::integral_constant<bool, ( sizeof( T ) > sizeof( storage::local ) )>
 			{
 			};
 		};
-
 
 		template <class ValueType> void construct( ValueType &&_value ){};
 

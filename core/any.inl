@@ -4,20 +4,37 @@
 
 namespace core
 {
+	// (N4562 6.3.1.1)
 	constexpr any::any()
+		: m_VTable( nullptr )
 	{
 	}
 
-	any::any( const any &other )
+	// (N4562 6.3.1.3)
+	any::any( const any &_rhs )
 	{
+		if ( !_rhs.empty() )
+		{
+			_rhs.m_VTable->copy( m_Storage, _rhs.m_Storage );
+			m_VTable = _rhs.m_VTable;
+		}
 	}
 
-	any::any( any &&other )
+	// (N4562 6.3.1.6)
+	any::any( any &&_rhs )
 	{
+		if ( !_rhs.empty() )
+		{
+			_rhs.m_VTable->move( m_Storage, _rhs.m_Storage );
+			_rhs.m_VTable = nullptr;
+		}
 	}
 
-	template <class ValueType> any::any( ValueType &&value )
+	// (N4562 6.3.1.11) must not participate in overloading if T is of type any
+	template <class T, typename> any::any( T &&_value )
 	{
+		// TODO: T must be copy constructible
+		construct( std::forward<T>( _value ) );
 	}
 
 	any &any::operator=( const any &_rhs )
@@ -32,12 +49,13 @@ namespace core
 		return *this;
 	}
 
-	template <typename ValueType> any &any::operator=( ValueType &&_rhs )
+	template <typename T> any &any::operator=( T &&_rhs )
 	{
 		any( std::forward<ValueType>( _rhs ) ).swap( *this );
 		return *this;
 	}
 
+	// (N4562 6.3.1.15)
 	any::~any()
 	{
 		reset();
@@ -51,9 +69,9 @@ namespace core
 	{
 	}
 
-	bool any::has_value() const
+	bool any::empty() const
 	{
-		return ( nullptr != m_VTable );
+		return ( nullptr == m_VTable );
 	}
 
 	const type_info &any::type() const
