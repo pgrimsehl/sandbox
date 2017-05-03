@@ -125,15 +125,15 @@ template <class T, class U> struct sort_by_size
 {
 	using type = typename std::conditional<( sizeof( T ) < sizeof( U ) ), T, U>::type;
 };
-mp::tl::sort_t<typelist2, sort_by_size> sorted;
-mp::tl::split_at_t0< typelist2, 4> splitted_left;
-mp::tl::split_at_t1< typelist2, 4> splitted_right;
-mp::tl::replace_first_t< typelist2, int, u64> replaced_first;
+mp::tl::sort_t<typelist2, sort_by_size>		 sorted;
+mp::tl::split_at_t0<typelist2, 4>			 splitted_left;
+mp::tl::split_at_t1<typelist2, 4>			 splitted_right;
+mp::tl::replace_first_t<typelist2, int, u64> replaced_first;
 
 core::any any_empty();
 core::any any_int( 25 );
 core::any any_cc_int( any_int );
-
+core::any any_string( std::string( "upps" ) );
 
 int main()
 {
