@@ -4,27 +4,31 @@
 
 namespace core
 {
-	// partial implementation of std::any for C++11
+	// partial implementation of std::experimental::fundamentals_v2::any for C++11
 	// (See http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4617.pdf, class any, pp54, for specification)
 	class any final
 	{
 	public:
-		constexpr any();
-		any( const any &_rhs );
-		any( any &&_rhs );
-		template <class T, typename = typename std::enable_if<!std::is_same<typename std::decay<T>::type, any>::value>::type> any( T &&_value );
-
-		any &					   operator=( const any &_rhs );
-		any &					   operator=( any &&_rhs );
-		template <typename T> any &operator=( T &&_rhs );
-
+		// 6.3.1, any construct/destruct
+		any() noexcept;
+		any( const any &_other );
+		any( any &&_other ) noexcept;
+		template <class ValueType, typename = typename std::enable_if<!std::is_same<typename std::decay<ValueType>::type, any>::value>::type>
+		any( ValueType &&_value );
 		~any();
 
-		void reset();
-		void swap( any &other );
+		// 6.3.2, any assignments
+		any &							operator=( const any &_rhs );
+		any &							operator=( any &&_rhs ) noexcept;
+		template <class ValueType> any &operator=( ValueType &&_rhs );
 
-		bool			 empty() const;
-		const type_info &type() const;
+		// 6.3.3, any modifiers
+		void clear() noexcept;
+		void swap( any &_rhs ) noexcept;
+
+		// 6.3.4, any observers
+		bool			 empty() const noexcept;
+		const type_info &type() const noexcept;
 
 	private:
 		struct internal
