@@ -135,6 +135,9 @@ core::any any_int( 25 );
 core::any any_cc_int( any_int );
 core::any any_string( std::string( "upps" ) );
 
+std::string str = core::any_cast<const std::string&>( any_string );
+//core::any_cast<std::string&>( any_string ) = "ladida";
+
 int main()
 {
 	u32 udl0 = "CRC32 UDL"_crc32;

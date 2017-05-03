@@ -1,9 +1,24 @@
 #pragma once
 
 #include <type_traits> // std::aligned_union
+#include <typeinfo>	// std::bad_cast
 
 namespace core
 {
+	// N4618 20.8.2, class bad_any_cast
+	class bad_any_cast;
+	// N4618 20.8.3, class any
+	class any;
+	// N4618 20.8.4, non-member functions
+	void swap( any &_x, any &_y ) noexcept;
+	// template <class T, class... Args> any		   make_any( Args &&... args );
+	// template <class T, class U, class... Args> any make_any( initializer_list<U> il, Args &&... args );
+	template <class ValueType> ValueType		any_cast( const any &_operand );
+	template <class ValueType> ValueType		any_cast( any &_operand );
+	template <class ValueType> ValueType		any_cast( any &&_operand );
+	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept;
+	template <class ValueType> ValueType *		any_cast( any *_operand ) noexcept;
+
 	// partial implementation of std::experimental::fundamentals_v2::any for C++11
 	// (See http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4617.pdf, class any, pp54, for specification)
 	class any final
@@ -141,21 +156,45 @@ namespace core
 					_storage.heap = new T( std::forward<ValueType>( _value ) );
 				}
 			};
+
+			// casting of local values
+			template <class ValueType> struct local_cast
+			{
+				static ValueType *cast( storage &_storage )
+				{
+					return reinterpret_cast<ValueType *>( &_storage.local );
+				}
+				static const ValueType *cast( const storage &_storage )
+				{
+					return reinterpret_cast<const ValueType *>( &_storage.local );
+				}
+			};
+			// casting of heap values
+			template <class ValueType> struct heap_cast
+			{
+				static ValueType *cast( storage &_storage )
+				{
+					return reinterpret_cast<ValueType *>( _storage.heap );
+				}
+				static const ValueType *cast( const storage &_storage )
+				{
+					return reinterpret_cast<const ValueType *>( _storage.heap );
+				}
+			};
 		};
 
-		template <class ValueType> void construct( ValueType &&_value );
+		template <class ValueType> void				construct( ValueType &&_value );
+		template <class ValueType> ValueType *		cast();
+		template <class ValueType> const ValueType *cast() const;
 
 		// the value storage
 		internal::storage m_Storage;
 		// the pointer to the method table
 		internal::vtable_type *m_VTable = nullptr;
-	};
 
-	// template <class ValueType> ValueType		any_cast( const any &operand );
-	// template <class ValueType> ValueType		any_cast( any &operand );
-	// template <class ValueType> ValueType		any_cast( any &&operand );
-	// template <class ValueType> const ValueType *any_cast( const any *operand );
-	// template <class ValueType> ValueType *		any_cast( any *operand );
+		template <class ValueType> friend const ValueType *any_cast( const any *_operand ) noexcept;
+		template <class ValueType> friend ValueType *	  any_cast( any *_operand ) noexcept;
+	};
 }
 
 #include "any.inl"
