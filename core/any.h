@@ -3,6 +3,9 @@
 #include <type_traits> // std::aligned_union
 #include <typeinfo>	// std::bad_cast
 
+// partial implementation of std::any for C++11
+// (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type, for specification)
+
 namespace core
 {
 	// N4618 20.8.2, class bad_any_cast
@@ -19,30 +22,32 @@ namespace core
 	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept;
 	template <class ValueType> ValueType *		any_cast( any *_operand ) noexcept;
 
-	// partial implementation of std::experimental::fundamentals_v2::any for C++11
-	// (See http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4617.pdf, class any, pp54, for specification)
 	class any final
 	{
 	public:
-		// N4617 6.3.1, any construct/destruct
-		any() noexcept;
+		// 20.8.3.1, construction and destruction
+		constexpr any() noexcept;
 		any( const any &_other );
 		any( any &&_other ) noexcept;
 		template <class ValueType, typename = typename std::enable_if<!std::is_same<typename std::decay<ValueType>::type, any>::value>::type>
 		any( ValueType &&_value );
+		// template <class ValueType, class... Args> explicit any( in_place_type_t<ValueType>, Args &&... );
+		// template <class ValueType, class U, class... Args> explicit any( in_place_type_t<ValueType>, initializer_list<U>, Args &&... );
 		~any();
 
-		// N4617 6.3.2, any assignments
+		// 20.8.3.2, assignments
 		any &							operator=( const any &_rhs );
 		any &							operator=( any &&_rhs ) noexcept;
 		template <class ValueType> any &operator=( ValueType &&_rhs );
 
-		// N4617 6.3.3, any modifiers
-		void clear() noexcept;
+		// 20.8.3.3, modifiers
+		// template <class ValueType, class... Args> void			emplace( Args &&... );
+		// template <class ValueType, class U, class... Args> void emplace( initializer_list<U>, Args &&... );
+		void reset() noexcept;
 		void swap( any &_rhs ) noexcept;
 
-		// N4617 6.3.4, any observers
-		bool			 empty() const noexcept;
+		// 20.8.3.4, observers
+		bool			 has_value() const noexcept;
 		const type_info &type() const noexcept;
 
 	private:
@@ -132,7 +137,7 @@ namespace core
 			};
 
 			// helper template to determine if a value should be allocated on the heap
-			// N4617 6.3-3: 'Such small-object optimization shall only be applied to types T for which is_nothrow_move_constructible_v<T> is true.'
+			// N4618 20.8.3-3: 'Such small-object optimization shall only be applied to types T for which is_nothrow_move_constructible_v<T> is true.'
 			template <class T>
 			struct allocate_on_heap
 				: public std::integral_constant<bool, !std::is_nothrow_move_constructible<T>::value || ( sizeof( T ) > sizeof( storage::local ) ) ||
@@ -169,6 +174,7 @@ namespace core
 					return reinterpret_cast<const ValueType *>( &_storage.local );
 				}
 			};
+
 			// casting of heap values
 			template <class ValueType> struct heap_cast
 			{
@@ -183,6 +189,7 @@ namespace core
 			};
 		};
 
+		// construct a value of type ValueType
 		template <class ValueType> void				construct( ValueType &&_value );
 		template <class ValueType> ValueType *		cast();
 		template <class ValueType> const ValueType *cast() const;
@@ -192,6 +199,7 @@ namespace core
 		// the pointer to the method table
 		internal::vtable_type *m_VTable = nullptr;
 
+		// any_cast must be a friend
 		template <class ValueType> friend const ValueType *any_cast( const any *_operand ) noexcept;
 		template <class ValueType> friend ValueType *	  any_cast( any *_operand ) noexcept;
 	};

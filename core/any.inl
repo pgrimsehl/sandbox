@@ -1,82 +1,83 @@
-#include "stdafx.h"
-
-#include "core/any.h"
-
 namespace core
 {
-	// (N4617 6.3.1-1)
-	any::any() noexcept
+	// ---------------------------------------------------------------------------
+	constexpr any::any() noexcept
 		: m_VTable( nullptr )
 	{
 	}
 
-	// (N4617 6.3.1-3)
+	// ---------------------------------------------------------------------------
 	any::any( const any &_other )
 	{
-		if ( !_other.empty() )
+		if ( _other.has_value() )
 		{
 			_other.m_VTable->copy_construct( m_Storage, _other.m_Storage );
 			m_VTable = _other.m_VTable;
 		}
 	}
 
-	// (N4617 6.3.1-6)
+	// ---------------------------------------------------------------------------
 	any::any( any &&_other ) noexcept
 	{
-		if ( !_other.empty() )
+		if ( _other.has_value() )
 		{
 			_other.m_VTable->move_construct( m_Storage, _other.m_Storage );
 			_other.m_VTable = nullptr;
 		}
 	}
 
-	// (N4617 6.3.1-13) must not participate in overloading if decay_t<ValueType> is of type any
+	// ---------------------------------------------------------------------------
 	template <class ValueType, typename> any::any( ValueType &&_value )
 	{
-		// (N4617 6.3.1-11)
+		// (N4618 20.8.3.1-9)
 		static_assert( std::is_copy_constructible<typename std::decay<ValueType>::type>::value,
-					   "(N4617 6.3.1.11): 'T shall satisfy the CopyConstructible requirements.'" );
+					   "(N4618 20.8.3.1.11): 'T shall satisfy the CopyConstructible requirements.'" );
 		construct( std::forward<ValueType>( _value ) );
 	}
 
-	// (N4617 6.3.2-1)
+	// ---------------------------------------------------------------------------
+	any::~any()
+	{
+		// (N4618 20.8.3.1-23)
+		reset();
+	}
+
+	// ---------------------------------------------------------------------------
 	any &any::operator=( const any &_rhs )
 	{
+		// (N4618 20.8.3.2-1)
 		any( _rhs ).swap( *this );
 		return *this;
 	}
 
-	// (N4617 6.3.2-5)
+	// ---------------------------------------------------------------------------
 	any &any::operator=( any &&_rhs ) noexcept
 	{
+		// (N4618 20.8.3.2-4)
 		any( std::move( _rhs ) ).swap( *this );
 		return *this;
 	}
 
-	// (N4617 6.3.2-9)
+	// ---------------------------------------------------------------------------
 	template <typename ValueType> any &any::operator=( ValueType &&_rhs )
 	{
+		// (N4618 20.8.3.2-9)
 		any( std::forward<ValueType>( _rhs ) ).swap( *this );
 		return *this;
 	}
 
-	// (N4617 6.3.1-15)
-	any::~any()
+	// ---------------------------------------------------------------------------
+	void any::reset() noexcept
 	{
-		clear();
-	}
-
-	// (N4617 6.3.3-1)
-	void any::clear() noexcept
-	{
-		if ( nullptr != m_VTable )
+		// (N4618 20.8.3.3-13)
+		if ( has_value() )
 		{
 			m_VTable->destroy( m_Storage );
 			m_VTable = nullptr;
 		}
 	}
 
-	// (N4617 6.3.3-4)
+	// ---------------------------------------------------------------------------
 	void any::swap( any &_rhs ) noexcept
 	{
 		if ( this != &_rhs )
@@ -97,23 +98,25 @@ namespace core
 		}
 	}
 
-	// (N4617 6.3.4-1)
-	bool any::empty() const noexcept
+	// ---------------------------------------------------------------------------
+	bool any::has_value() const noexcept
 	{
-		return ( nullptr == m_VTable );
+		return ( nullptr != m_VTable );
 	}
 
-	// (N4617 6.3.4-3)
+	// ---------------------------------------------------------------------------
 	const type_info &any::type() const noexcept
 	{
-		if ( !empty() )
+		if ( has_value() )
 		{
 			return m_VTable->type();
 		}
 		return typeid( void );
 	}
 
+	// ---------------------------------------------------------------------------
 	// creates the internal representation of _value
+	// ---------------------------------------------------------------------------
 	template <class ValueType> void any::construct( ValueType &&_value )
 	{
 		// for all further processing, we use the decay type T of ValueType
@@ -134,6 +137,7 @@ namespace core
 		m_VTable = &vtable;
 	};
 
+	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType *any::cast()
 	{
 		using T			= typename std::decay<ValueType>::type;
@@ -141,6 +145,8 @@ namespace core
 													typename internal::local_cast<ValueType>>::type;
 		return cast_type::cast( m_Storage );
 	}
+
+	// ---------------------------------------------------------------------------
 	template <class ValueType> const ValueType *any::cast() const
 	{
 		using T			= typename std::decay<ValueType>::type;
@@ -149,7 +155,9 @@ namespace core
 		return cast_type::cast( m_Storage );
 	}
 
+	// ---------------------------------------------------------------------------
 	// N4618 20.8.2, class bad_any_cast
+	// ---------------------------------------------------------------------------
 	class bad_any_cast : public std::bad_cast
 	{
 	public:
@@ -159,14 +167,20 @@ namespace core
 		}
 	};
 
-	// N4618 20.8.4, non-member functions
+	// ---------------------------------------------------------------------------
 	void swap( any &_x, any &_y ) noexcept
 	{
+		// N4618 20.8.4-1
 		_x.swap( _y );
 	}
 
+	// ---------------------------------------------------------------------------
 	// template <class T, class... Args> any		   make_any( Args &&... args );
+
+	// ---------------------------------------------------------------------------
 	// template <class T, class U, class... Args> any make_any( initializer_list<U> il, Args &&... args );
+
+	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( const any &_operand )
 	{
 		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
@@ -178,6 +192,8 @@ namespace core
 		}
 		return *result;
 	}
+
+	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( any &_operand )
 	{
 		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
@@ -189,6 +205,8 @@ namespace core
 		}
 		return *result;
 	}
+
+	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( any &&_operand )
 	{
 		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
@@ -200,6 +218,8 @@ namespace core
 		}
 		return *result;
 	}
+
+	// ---------------------------------------------------------------------------
 	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept
 	{
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
@@ -208,6 +228,8 @@ namespace core
 		}
 		return nullptr;
 	}
+
+	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType *any_cast( any *_operand ) noexcept
 	{
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
