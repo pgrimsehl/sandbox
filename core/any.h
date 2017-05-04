@@ -6,7 +6,6 @@
 // partial implementation of std::any for C++11
 // (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type,
 // for specification)
-
 namespace core
 {
 	// N4618 20.8.2, class bad_any_cast
@@ -14,14 +13,15 @@ namespace core
 	// N4618 20.8.3, class any
 	class any;
 	// N4618 20.8.4, non-member functions
-	void										   swap( any &_x, any &_y ) noexcept;
-	template <class T, class... Args> any		   make_any( Args &&... args );
-	template <class T, class U, class... Args> any make_any( std::initializer_list<U> il, Args &&... args );
-	template <class ValueType> ValueType		   any_cast( const any &_operand );
-	template <class ValueType> ValueType		   any_cast( any &_operand );
-	template <class ValueType> ValueType		   any_cast( any &&_operand );
-	template <class ValueType> const ValueType *   any_cast( const any *_operand ) noexcept;
-	template <class ValueType> ValueType *		   any_cast( any *_operand ) noexcept;
+	void								  swap( any &_x, any &_y ) noexcept;
+	template <class T, class... Args> any make_any( Args &&... args );
+	template <class T, class U, class... Args>
+	any									 make_any( std::initializer_list<U> il, Args &&... args );
+	template <class ValueType> ValueType any_cast( const any &_operand );
+	template <class ValueType> ValueType any_cast( any &_operand );
+	template <class ValueType> ValueType any_cast( any &&_operand );
+	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept;
+	template <class ValueType> ValueType *		any_cast( any *_operand ) noexcept;
 
 	class any final
 	{
@@ -212,3 +212,38 @@ namespace core
 }
 
 #include "any.inl"
+
+// experimental type_info replacement (when rtti usage is disabled and compiler does not allow
+// retrieving compile time type information via typeid() (GCC))
+namespace core
+{
+	class any_type_info
+	{
+		constexpr any_type_info()
+		{
+		}
+
+		template <class T> friend const any_type_info &any_typeid();
+		template <class T> friend class any_type_wrapper;
+
+	public:
+		bool operator==( const any_type_info &_rhs ) const
+		{
+			return this == &_rhs;
+		}
+	};
+
+	template <class T> class any_type_wrapper
+	{
+		static const any_type_info id;
+
+		template <class T> friend const any_type_info &any_typeid();
+	};
+	template <class T> const any_type_info any_type_wrapper<T>::id;
+
+	template <class ValueType> const any_type_info &any_typeid()
+	{
+		using T = typename std::decay<ValueType>::type;
+		return any_type_wrapper<T>::id;
+	};
+}

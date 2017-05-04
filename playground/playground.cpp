@@ -219,12 +219,12 @@ int main()
 	// In C++17 std::in_place_type_t<T> is used for these constructors
 	// MyVariant v1<std::string, const char*>("dumdidum");
 
-	const any_type_id &u32_id = any_type_of<u32>();
-	const any_type_id &u32_ptr_id = any_type_of<u32*>();
-	const any_type_id &string_id = any_type_of<std::string>();
+	const core::any_type_info &u32_id = core::any_typeid<u32>();
+	const core::any_type_info &u32_ptr_id = core::any_typeid<u32*>();
+	const core::any_type_info &string_id = core::any_typeid<std::string>();
 
-	bool same_types = any_type_of<std::string&>() == string_id;
-	same_types = any_type_of<int>() == string_id;
+	bool same_types = core::any_typeid<std::string&>() == string_id;
+	same_types = core::any_typeid<int>() == string_id;
 
 	return 0;
 }
