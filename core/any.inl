@@ -106,6 +106,10 @@ namespace core
 	// (N4617 6.3.4-3)
 	const type_info &any::type() const noexcept
 	{
+		if ( !empty() )
+		{
+			return m_VTable->type();
+		}
 		return typeid( void );
 	}
 
@@ -167,7 +171,8 @@ namespace core
 	{
 		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
 					   "Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
-		auto result = any_cast<typename std::add_const<typename std::remove_reference<ValueType>::type>::type>( &_operand ) if ( nullptr == result )
+		auto result = any_cast<typename std::add_const<typename std::remove_reference<ValueType>::type>::type>( &_operand );
+		if ( nullptr == result )
 		{
 			throw bad_any_cast();
 		}

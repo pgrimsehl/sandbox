@@ -10,6 +10,7 @@
 #include <core/any.h>
 #include <core/udl.h>
 
+#include <cassert>
 #include <string>
 #include <tuple>
 
@@ -135,11 +136,49 @@ core::any any_int( 25 );
 core::any any_cc_int( any_int );
 core::any any_string( std::string( "upps" ) );
 
-std::string str = core::any_cast<const std::string&>( any_string );
-//core::any_cast<std::string&>( any_string ) = "ladida";
+// std::string str = core::any_cast<const std::string &>( any_string );
+// core::any_cast<std::string&>( any_string ) = "ladida";
+
+std::decay_t<char>		   d0;
+std::decay_t<const char>   d1;
+std::decay_t<char *>	   d2;
+std::decay_t<const char *> d3;
+std::decay_t<char &>	   d4;
+std::decay_t<const char &> d5;
+
+std::remove_reference_t<char>		  r0;
+std::remove_reference_t<const char>   r1 = 0;
+std::remove_reference_t<char *>		  r2;
+std::remove_reference_t<const char *> r3;
+std::remove_reference_t<char &>		  r4;
+std::remove_reference_t<const char &> r5 = r1;
 
 int main()
 {
+	using namespace core;
+
+	any x( 5 );						   // x holds int
+	assert( any_cast<int>( x ) == 5 ); // cast to value
+	any_cast<int &>( x ) = 10;		   // cast to reference
+	assert( any_cast<int>( x ) == 10 );
+
+	x = "Meow"; // ax holds const char*
+	assert( strcmp( core::any_cast<const char *>( x ), "Meow" ) == 0 );
+	core::any_cast<const char *&>( x ) = "Harry";
+	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
+
+	x = std::string( "Meow" ); // x holds string
+	std::string s, s2( "Jane" );
+	s = std::move( any_cast<std::string &>( x ) ); // move from any
+	assert( s == "Meow" );
+	any_cast<std::string &>( x ) = move( s2 ); // move to any
+	assert( any_cast<const std::string &>( x ) == "Jane" );
+	std::string	cat( "Meow" );
+
+	const any y( cat ); // const y holds string
+	assert( any_cast<const std::string &>( y ) == cat );
+	//any_cast<std::string &>( y ); // error; cannot any_cast away const
+
 	u32 udl0 = "CRC32 UDL"_crc32;
 
 	SubA suba;
@@ -151,7 +190,7 @@ int main()
 
 	MyThing thingy;
 
-	f32 x					   = thingy.get<"PosX"_crc32>();
+	f32 tx					   = thingy.get<"PosX"_crc32>();
 	u32 height				   = thingy.get<"Height"_crc32>();
 	thingy.get<"Name"_crc32>() = "TheThing";
 
