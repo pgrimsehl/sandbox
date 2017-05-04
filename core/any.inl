@@ -122,14 +122,18 @@ namespace core
 		// for all further processing, we use the decay type T of ValueType
 		using T = typename std::decay<ValueType>::type;
 		// select heap or local storage
-		using storage_type = typename std::conditional<internal::allocate_on_heap<T>::value, typename internal::heap_storage<T>,
+		using storage_type = typename std::conditional<internal::allocate_on_heap<T>::value,
+													   typename internal::heap_storage<T>,
 													   typename internal::local_storage<T>>::type;
 		// select heap or local construction
-		using construct_type = typename std::conditional<internal::allocate_on_heap<T>::value, typename internal::heap_construction<ValueType, T>,
-														 typename internal::local_construction<ValueType, T>>::type;
+		using construct_type =
+			typename std::conditional<internal::allocate_on_heap<T>::value,
+									  typename internal::heap_construction<ValueType, T>,
+									  typename internal::local_construction<ValueType, T>>::type;
 
 		// the static vtable for this type
-		static internal::vtable_type vtable = { storage_type::type, storage_type::copy_construct, storage_type::move_construct, storage_type::swap,
+		static internal::vtable_type vtable = { storage_type::type, storage_type::copy_construct,
+												storage_type::move_construct, storage_type::swap,
 												storage_type::destroy };
 		// construct the value
 		construct_type::construct( std::forward<ValueType>( _value ), m_Storage );
@@ -141,7 +145,8 @@ namespace core
 	template <class ValueType> ValueType *any::cast()
 	{
 		using T			= typename std::decay<ValueType>::type;
-		using cast_type = typename std::conditional<internal::allocate_on_heap<T>::value, typename internal::heap_cast<ValueType>,
+		using cast_type = typename std::conditional<internal::allocate_on_heap<T>::value,
+													typename internal::heap_cast<ValueType>,
 													typename internal::local_cast<ValueType>>::type;
 		return cast_type::cast( m_Storage );
 	}
@@ -150,7 +155,8 @@ namespace core
 	template <class ValueType> const ValueType *any::cast() const
 	{
 		using T			= typename std::decay<ValueType>::type;
-		using cast_type = typename std::conditional<internal::allocate_on_heap<T>::value, typename internal::heap_cast<ValueType>,
+		using cast_type = typename std::conditional<internal::allocate_on_heap<T>::value,
+													typename internal::heap_cast<ValueType>,
 													typename internal::local_cast<ValueType>>::type;
 		return cast_type::cast( m_Storage );
 	}
@@ -183,9 +189,12 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( const any &_operand )
 	{
-		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
-					   "Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
-		auto result = any_cast<typename std::add_const<typename std::remove_reference<ValueType>::type>::type>( &_operand );
+		static_assert(
+			std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
+			"Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
+		auto result =
+			any_cast<typename std::add_const<typename std::remove_reference<ValueType>::type>::type>(
+				&_operand );
 		if ( nullptr == result )
 		{
 			throw bad_any_cast();
@@ -196,8 +205,9 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( any &_operand )
 	{
-		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
-					   "Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
+		static_assert(
+			std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
+			"Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
 		auto result = any_cast<typename std::remove_reference<ValueType>::type>( &_operand );
 		if ( nullptr == result )
 		{
@@ -209,8 +219,9 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( any &&_operand )
 	{
-		static_assert( std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
-					   "Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
+		static_assert(
+			std::is_reference<ValueType>::value || std::is_copy_constructible<ValueType>::value,
+			"Requires: is_reference_v<ValueType> is true or is_copy_constructible_v<ValueType> is true." );
 		auto result = any_cast<typename std::remove_reference<ValueType>::type>( &_operand );
 		if ( nullptr == result )
 		{
