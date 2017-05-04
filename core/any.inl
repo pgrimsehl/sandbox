@@ -184,7 +184,8 @@ namespace core
 	// template <class T, class... Args> any		   make_any( Args &&... args );
 
 	// ---------------------------------------------------------------------------
-	// template <class T, class U, class... Args> any make_any( initializer_list<U> il, Args &&... args );
+	// template <class T, class U, class... Args> any make_any( initializer_list<U> il, Args &&... args
+	// );
 
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType any_cast( const any &_operand )
