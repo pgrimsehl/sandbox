@@ -16,7 +16,7 @@ namespace core
 	// N4618 20.8.4, non-member functions
 	void										   swap( any &_x, any &_y ) noexcept;
 	template <class T, class... Args> any		   make_any( Args &&... args );
-	template <class T, class U, class... Args> any make_any( initializer_list<U> il, Args &&... args );
+	template <class T, class U, class... Args> any make_any( std::initializer_list<U> il, Args &&... args );
 	template <class ValueType> ValueType		   any_cast( const any &_operand );
 	template <class ValueType> ValueType		   any_cast( any &_operand );
 	template <class ValueType> ValueType		   any_cast( any &&_operand );
