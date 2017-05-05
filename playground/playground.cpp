@@ -10,9 +10,12 @@
 #include <core/any.h>
 #include <core/udl.h>
 
+#include <test_lib/any_user.h>
+
 #include <cassert>
 #include <string>
 #include <tuple>
+#include <vector>
 
 class A
 {
@@ -56,8 +59,9 @@ using MyVariant = mp::variant<i32, u32, bool, std::string>;
 
 // template <class T, typename U > struct has_lala;
 // template <class T> struct has_lala<T, void> : public std::false_type {};
-// template <class T> struct has_lala<T, std::is_same<decltype(std::declval<T>().lala()), decltype(std::declval<T>().lala())>::value> : public
-// std::true_type {}; template <class T> struct has_lala<T, std::is_same<T,T>> : public std::true_type {};
+// template <class T> struct has_lala<T, std::is_same<decltype(std::declval<T>().lala()),
+// decltype(std::declval<T>().lala())>::value> : public std::true_type {}; template <class T> struct
+// has_lala<T, std::is_same<T,T>> : public std::true_type {};
 
 class HasLala
 {
@@ -102,8 +106,10 @@ typelist6 list6;
 // using type4 = std::conditional_t<mp::tl::contains_v<typelist0, int>, A, B>;
 // type4 t4;
 
-class MyThing : public mp::gen::thing<mp::gen::prop<"Name"_crc32, std::string>, mp::gen::prop<"PosX"_crc32, f32>, mp::gen::prop<"PosY"_crc32, f32>,
-									  mp::gen::prop<"Width"_crc32, u16>, mp::gen::prop<"Height"_crc32, u32>>
+class MyThing
+	: public mp::gen::thing<mp::gen::prop<"Name"_crc32, std::string>, mp::gen::prop<"PosX"_crc32, f32>,
+							mp::gen::prop<"PosY"_crc32, f32>, mp::gen::prop<"Width"_crc32, u16>,
+							mp::gen::prop<"Height"_crc32, u32>>
 {
 public:
 	MyThing() = default;
@@ -173,11 +179,11 @@ int main()
 	assert( s == "Meow" );
 	any_cast<std::string &>( x ) = move( s2 ); // move to any
 	assert( any_cast<const std::string &>( x ) == "Jane" );
-	std::string	cat( "Meow" );
+	std::string cat( "Meow" );
 
 	const any y( cat ); // const y holds string
 	assert( any_cast<const std::string &>( y ) == cat );
-	//any_cast<std::string &>( y ); // error; cannot any_cast away const
+	// any_cast<std::string &>( y ); // error; cannot any_cast away const
 
 	u32 udl0 = "CRC32 UDL"_crc32;
 
@@ -211,20 +217,31 @@ int main()
 	MyVariant v0( 25ul );
 	v0 = std::string( "lala" );
 	v0.emplace<std::string>( "lala" );
-	// For C++11 (http://stackoverflow.com/questions/13002368/template-constructor-in-a-class-template-how-to-explicitly-specify-template-ar)
-	// You cannot use T for the class template parameter and the constructor template parameter. But, to answer your question, from[14.5.2p5] :
-	// Because the explicit template argument list follows the function template name, and because conversion member function templates
-	// and constructor member function templates are called without using a function name, there is no way to provide an explicit template
-	// argument list for these function templates.
-	// In C++17 std::in_place_type_t<T> is used for these constructors
-	// MyVariant v1<std::string, const char*>("dumdidum");
+	// For C++11
+	// (http://stackoverflow.com/questions/13002368/template-constructor-in-a-class-template-how-to-explicitly-specify-template-ar)
+	// You cannot use T for the class template parameter and the constructor template parameter. But, to
+	// answer your question, from[14.5.2p5] : Because the explicit template argument list follows the
+	// function template name, and because conversion member function templates and constructor member
+	// function templates are called without using a function name, there is no way to provide an
+	// explicit template argument list for these function templates. In C++17 std::in_place_type_t<T> is
+	// used for these constructors MyVariant v1<std::string, const char*>("dumdidum");
 
-	const core::any_type_info &u32_id = core::any_typeid<u32>();
-	const core::any_type_info &u32_ptr_id = core::any_typeid<u32*>();
-	const core::any_type_info &string_id = core::any_typeid<std::string>();
+	const core::any_type_info &u32_id	 = core::any_typeid<u32>();
+	const core::any_type_info &u32_ptr_id = core::any_typeid<u32 *>();
+	const core::any_type_info &string_id  = core::any_typeid<std::string>();
 
-	bool same_types = core::any_typeid<std::string&>() == string_id;
-	same_types = core::any_typeid<int>() == string_id;
+	bool same_types = core::any_typeid<std::string &>() == string_id;
+	same_types		= core::any_typeid<int>() == string_id;
+
+	std::vector<int> vec;
+	vec.push_back( 12 );
+
+	any_user::use_vector();
+
+	if ( any_user::use_any_id() )
+	{
+		return 1;
+	}
 
 	return 0;
 }

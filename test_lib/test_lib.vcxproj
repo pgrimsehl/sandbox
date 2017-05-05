@@ -20,8 +20,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{8D3E2E18-F3E9-4A9E-9ECE-3151BD89510E}</ProjectGuid>
-    <RootNamespace>core</RootNamespace>
+    <ProjectGuid>{763A0ABC-F548-4616-BC00-7A16453B4451}</ProjectGuid>
+    <RootNamespace>test_lib</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -69,30 +69,34 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)build\bin\$(SolutionName)_$(Platform)_$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\obj\$(SolutionName)_$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)build\bin\$(SolutionName)_$(Platform)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\obj\$(SolutionName)_$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)build\bin\$(SolutionName)_$(Platform)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\obj\$(SolutionName)_$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)build\bin\$(SolutionName)_$(Platform)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\$(SolutionName)_$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)build\bin\$(SolutionName)_$(Platform)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\obj\$(SolutionName)_$(ProjectName)_$(Platform)_$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
@@ -126,13 +130,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="any.h" />
-    <ClInclude Include="types.h" />
-    <ClInclude Include="udl.h" />
-    <ClInclude Include="udl_crc32.h" />
+    <ClInclude Include="any_user.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="any.inl" />
+    <ClCompile Include="any_user.cpp" />
+    <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
