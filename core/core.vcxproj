@@ -131,9 +131,6 @@
     <ClInclude Include="udl.h" />
     <ClInclude Include="udl_crc32.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="any.inl" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

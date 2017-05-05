@@ -238,7 +238,7 @@ int main()
 
 	any_user::use_vector();
 
-	if ( any_user::use_any_id() )
+	if ( core::any_typeid<u32>() == any_user::use_any_id() )
 	{
 		return 1;
 	}
