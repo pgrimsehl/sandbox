@@ -1,7 +1,55 @@
 #pragma once
 
+#define USE_ANY_TYPEID
+
 #include <type_traits> // std::aligned_union
 #include <typeinfo>	// std::bad_cast
+
+#ifdef USE_ANY_TYPEID
+// ---------------------------------------------------------------------------
+// experimental type_info replacement (when rtti usage is disabled and compiler does not allow
+// retrieving compile time type information via typeid() (GCC))
+// ---------------------------------------------------------------------------
+namespace core
+{
+	class any_type_info
+	{
+		constexpr any_type_info()
+		{
+		}
+
+		template <class T> friend const any_type_info &any_typeid();
+		template <class T> friend class any_type_wrapper;
+
+	public:
+		bool operator==( const any_type_info &_rhs ) const
+		{
+			return this == &_rhs;
+		}
+	};
+
+	// ---------------------------------------------------------------------------
+	// type wrapper for any type T that holds a static any_type_info member
+	// ---------------------------------------------------------------------------
+	template <class T> class any_type_wrapper
+	{
+		static const any_type_info id;
+
+		template <class U> friend const any_type_info &any_typeid();
+	};
+	template <class T> const any_type_info any_type_wrapper<T>::id;
+
+	// ---------------------------------------------------------------------------
+	// returns the static any_type_info member
+	// any_type_wrapper<std::decay<ValueType>::type>::id
+	// ---------------------------------------------------------------------------
+	template <class ValueType> const any_type_info &any_typeid()
+	{
+		using T = typename std::decay<ValueType>::type;
+		return any_type_wrapper<T>::id;
+	};
+}
+#endif
 
 // partial implementation of std::any for C++11
 // (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type,
@@ -118,8 +166,19 @@ namespace core
 			return ( nullptr != m_VTable );
 		}
 
+#ifdef USE_ANY_TYPEID
 		// ---------------------------------------------------------------------------
-		const type_info &type() const noexcept
+		const any_type_info &type() const noexcept
+		{
+			if ( has_value() )
+			{
+				return m_VTable->type();
+			}
+			return any_typeid<void>();
+		}
+#else
+		// ---------------------------------------------------------------------------
+		const std::type_info &type() const noexcept
 		{
 			if ( has_value() )
 			{
@@ -127,6 +186,7 @@ namespace core
 			}
 			return typeid( void );
 		}
+#endif
 
 	private:
 		// internal struct for most implementation details
@@ -137,8 +197,10 @@ namespace core
 			// small objects
 			struct storage
 			{
+				constexpr storage(){};
+
 				union {
-					void *												   heap;
+					void *												   heap = nullptr;
 					std::aligned_union<sizeof( void * ), void * [2]>::type local;
 				};
 			};
@@ -146,7 +208,11 @@ namespace core
 			// this is the function table definition that will hold the method pointers
 			struct vtable_type
 			{
-				const type_info &( *type )();
+#ifdef USE_ANY_TYPEID
+				const any_type_info &( *type )();
+#else
+				const std::type_info &( *type )();
+#endif
 				void ( *copy_construct )( storage &_dst, const storage &_src );
 				void ( *move_construct )( storage &_dst, storage &_src );
 				void ( *swap )( storage &_dst, storage &_src );
@@ -156,10 +222,17 @@ namespace core
 			// this is the type-dependent method set for locally allocated values
 			template <class T> struct local_storage
 			{
-				static const type_info &type()
+#ifdef USE_ANY_TYPEID
+				static const any_type_info &type()
+				{
+					return any_typeid<T>();
+				}
+#else
+				static const std::type_info &type()
 				{
 					return typeid( T );
 				}
+#endif
 				// construct a new object using T's copy constructor
 				static void copy_construct( storage &_dst, const storage &_src )
 				{
@@ -187,10 +260,17 @@ namespace core
 			// this is the type-dependent method set for heap allocated values
 			template <class T> struct heap_storage
 			{
-				static const type_info &type()
+#ifdef USE_ANY_TYPEID
+				static const any_type_info &type()
+				{
+					return any_typeid<T>();
+				}
+#else
+				static const std::type_info &type()
 				{
 					return typeid( T );
 				}
+#endif
 				// construct a new object on the heap using T's copy constructor
 				static void copy_construct( storage &_dst, const storage &_src )
 				{
@@ -404,7 +484,11 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept
 	{
+#ifdef USE_ANY_TYPEID
+		if ( ( nullptr != _operand ) && ( _operand->type() == any_typeid<ValueType>() ) )
+#else
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
+#endif
 		{
 			return _operand->cast<ValueType>();
 		}
@@ -414,51 +498,14 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType *any_cast( any *_operand ) noexcept
 	{
+#ifdef USE_ANY_TYPEID
+		if ( ( nullptr != _operand ) && ( _operand->type() == any_typeid<ValueType>() ) )
+#else
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
+#endif
 		{
 			return _operand->cast<ValueType>();
 		}
 		return nullptr;
 	}
-
-	// ---------------------------------------------------------------------------
-	// experimental type_info replacement (when rtti usage is disabled and compiler does not allow
-	// retrieving compile time type information via typeid() (GCC))
-	// ---------------------------------------------------------------------------
-	class any_type_info
-	{
-		constexpr any_type_info()
-		{
-		}
-
-		template <class T> friend const any_type_info &any_typeid();
-		template <class T> friend class any_type_wrapper;
-
-	public:
-		bool operator==( const any_type_info &_rhs ) const
-		{
-			return this == &_rhs;
-		}
-	};
-
-	// ---------------------------------------------------------------------------
-	// type wrapper for any type T that holds a static any_type_info member
-	// ---------------------------------------------------------------------------
-	template <class T> class any_type_wrapper
-	{
-		static const any_type_info id;
-
-		template <class T> friend const any_type_info &any_typeid();
-	};
-	template <class T> const any_type_info any_type_wrapper<T>::id;
-
-	// ---------------------------------------------------------------------------
-	// returns the static any_type_info member
-	// any_type_wrapper<std::decay<ValueType>::type>::id
-	// ---------------------------------------------------------------------------
-	template <class ValueType> const any_type_info &any_typeid()
-	{
-		using T = typename std::decay<ValueType>::type;
-		return any_type_wrapper<T>::id;
-	};
 }
