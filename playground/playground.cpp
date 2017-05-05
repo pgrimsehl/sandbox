@@ -8,6 +8,7 @@
 #include <mp/variant.h>
 
 #include <core/any.h>
+#include <core/any_type_info.h>
 #include <core/udl.h>
 
 #include <test_lib/any_user.h>
@@ -168,10 +169,13 @@ int main()
 	any_cast<int &>( x ) = 10;		   // cast to reference
 	assert( any_cast<int>( x ) == 10 );
 
-	x = "Meow"; // ax holds const char*
+	x = "Meow"; // x holds const char*
 	assert( strcmp( core::any_cast<const char *>( x ), "Meow" ) == 0 );
 	core::any_cast<const char *&>( x ) = "Harry";
 	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
+
+	//size_t h0 = typeid(std::string).hash_code();
+	//size_t h1 = typeid(const std::string).hash_code();
 
 	x = std::string( "Meow" ); // x holds string
 	std::string s, s2( "Jane" );

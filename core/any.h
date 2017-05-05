@@ -1,54 +1,10 @@
 #pragma once
 
-#define USE_ANY_TYPEID
-
 #include <type_traits> // std::aligned_union
 #include <typeinfo>	// std::bad_cast
 
-#ifdef USE_ANY_TYPEID
-// ---------------------------------------------------------------------------
-// experimental type_info replacement (when rtti usage is disabled and compiler does not allow
-// retrieving compile time type information via typeid() (GCC))
-// ---------------------------------------------------------------------------
-namespace core
-{
-	class any_type_info
-	{
-		constexpr any_type_info()
-		{
-		}
-
-		template <class T> friend const any_type_info &any_typeid();
-		template <class T> friend class any_type_wrapper;
-
-	public:
-		bool operator==( const any_type_info &_rhs ) const
-		{
-			return this == &_rhs;
-		}
-	};
-
-	// ---------------------------------------------------------------------------
-	// type wrapper for any type T that holds a static any_type_info member
-	// ---------------------------------------------------------------------------
-	template <class T> class any_type_wrapper
-	{
-		static const any_type_info id;
-
-		template <class U> friend const any_type_info &any_typeid();
-	};
-	template <class T> const any_type_info any_type_wrapper<T>::id;
-
-	// ---------------------------------------------------------------------------
-	// returns the static any_type_info member
-	// any_type_wrapper<std::decay<ValueType>::type>::id
-	// ---------------------------------------------------------------------------
-	template <class ValueType> const any_type_info &any_typeid()
-	{
-		using T = typename std::decay<ValueType>::type;
-		return any_type_wrapper<T>::id;
-	};
-}
+#ifdef USE_ANY_TYPE_INFO
+#include "core/any_type_info.h"
 #endif
 
 // partial implementation of std::any for C++11
@@ -166,7 +122,7 @@ namespace core
 			return ( nullptr != m_VTable );
 		}
 
-#ifdef USE_ANY_TYPEID
+#ifdef USE_ANY_TYPE_INFO
 		// ---------------------------------------------------------------------------
 		const any_type_info &type() const noexcept
 		{
@@ -208,7 +164,7 @@ namespace core
 			// this is the function table definition that will hold the method pointers
 			struct vtable_type
 			{
-#ifdef USE_ANY_TYPEID
+#ifdef USE_ANY_TYPE_INFO
 				const any_type_info &( *type )();
 #else
 				const std::type_info &( *type )();
@@ -222,7 +178,7 @@ namespace core
 			// this is the type-dependent method set for locally allocated values
 			template <class T> struct local_storage
 			{
-#ifdef USE_ANY_TYPEID
+#ifdef USE_ANY_TYPE_INFO
 				static const any_type_info &type()
 				{
 					return any_typeid<T>();
@@ -260,7 +216,7 @@ namespace core
 			// this is the type-dependent method set for heap allocated values
 			template <class T> struct heap_storage
 			{
-#ifdef USE_ANY_TYPEID
+#ifdef USE_ANY_TYPE_INFO
 				static const any_type_info &type()
 				{
 					return any_typeid<T>();
@@ -484,7 +440,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept
 	{
-#ifdef USE_ANY_TYPEID
+#ifdef USE_ANY_TYPE_INFO
 		if ( ( nullptr != _operand ) && ( _operand->type() == any_typeid<ValueType>() ) )
 #else
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
@@ -498,7 +454,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType *any_cast( any *_operand ) noexcept
 	{
-#ifdef USE_ANY_TYPEID
+#ifdef USE_ANY_TYPE_INFO
 		if ( ( nullptr != _operand ) && ( _operand->type() == any_typeid<ValueType>() ) )
 #else
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include <core/any.h>
+#include <core/any_type_info.h>
 #include <core/types.h>
 
 #include <string>
