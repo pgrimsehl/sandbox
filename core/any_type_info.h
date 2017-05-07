@@ -49,11 +49,12 @@ namespace core
 	// ---------------------------------------------------------------------------
 	// The function that returns the any_type_info for a given type (compile-time)
 	// (equivalent of typeid operator)
-	// Since core::any stores std::decay<ValueType>::type for any ValueType
-	// the same conversion is done here
+	// To match the behaviour of the typeid operator ValueType is tranformed
+	// using std::remove_reference<typename std::remove_cv<ValueType>::type>::type
 	// ---------------------------------------------------------------------------
 	template <class ValueType> const any_type_info &any_typeid()
 	{
-		return any_type_wrapper<typename std::decay<ValueType>::type>::id;
+		return any_type_wrapper<
+			typename std::remove_reference<typename std::remove_cv<ValueType>::type>::type>::id;
 	};
 }

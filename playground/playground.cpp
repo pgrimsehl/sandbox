@@ -174,8 +174,26 @@ int main()
 	core::any_cast<const char *&>( x ) = "Harry";
 	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
 
-	//size_t h0 = typeid(std::string).hash_code();
-	//size_t h1 = typeid(const std::string).hash_code();
+
+	//size_t h0 = typeid(int).hash_code();
+	//size_t h1 = typeid(int&).hash_code();
+	//size_t h2 = typeid(int*).hash_code();
+	//size_t h0_c0 = typeid(const int).hash_code();
+	//size_t h0_c = typeid(int const).hash_code();
+	//size_t h1_c = typeid(int const&).hash_code();
+	//size_t h2_c = typeid(int const*).hash_code();
+	//size_t h2_cc = typeid(int const*const).hash_code();
+	//size_t h1_c0 = typeid(const int &).hash_code();
+	//size_t h2_c0 = typeid(const int *).hash_code();
+
+	const int test_int = 0;
+	std::remove_reference_t<std::remove_cv_t<int>> vh0;
+	std::remove_reference_t<std::remove_cv_t<int&>> vh1;
+	std::remove_reference_t<std::remove_cv_t<int*>> vh2;
+	std::remove_reference_t<std::remove_cv_t<const int>> vh0_c;
+	std::remove_reference_t<std::remove_cv_t<int const &>> vh1_c = test_int;
+	std::remove_reference_t<std::remove_cv_t<const int*>> vh2_c;
+	std::remove_reference_t<std::remove_cv_t<const int*const>> vh2_cc;
 
 	x = std::string( "Meow" ); // x holds string
 	std::string s, s2( "Jane" );
