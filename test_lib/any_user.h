@@ -2,12 +2,12 @@
 
 namespace core
 {
-	class any_type_info;
+	class type_info;
 }
 
 namespace any_user
 {
-	const core::any_type_info& use_any_id();
+	const core::type_info& use_any_id();
 
 	bool use_vector();
 }

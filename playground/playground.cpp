@@ -8,7 +8,7 @@
 #include <mp/variant.h>
 
 #include <core/any.h>
-#include <core/any_type_info.h>
+#include <core/type_info.h>
 #include <core/udl.h>
 
 #include <test_lib/any_user.h>
@@ -174,26 +174,25 @@ int main()
 	core::any_cast<const char *&>( x ) = "Harry";
 	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
 
+	// size_t h0 = typeid(int).hash_code();
+	// size_t h1 = typeid(int&).hash_code();
+	// size_t h2 = typeid(int*).hash_code();
+	// size_t h0_c0 = typeid(const int).hash_code();
+	// size_t h0_c = typeid(int const).hash_code();
+	// size_t h1_c = typeid(int const&).hash_code();
+	// size_t h2_c = typeid(int const*).hash_code();
+	// size_t h2_cc = typeid(int const*const).hash_code();
+	// size_t h1_c0 = typeid(const int &).hash_code();
+	// size_t h2_c0 = typeid(const int *).hash_code();
 
-	//size_t h0 = typeid(int).hash_code();
-	//size_t h1 = typeid(int&).hash_code();
-	//size_t h2 = typeid(int*).hash_code();
-	//size_t h0_c0 = typeid(const int).hash_code();
-	//size_t h0_c = typeid(int const).hash_code();
-	//size_t h1_c = typeid(int const&).hash_code();
-	//size_t h2_c = typeid(int const*).hash_code();
-	//size_t h2_cc = typeid(int const*const).hash_code();
-	//size_t h1_c0 = typeid(const int &).hash_code();
-	//size_t h2_c0 = typeid(const int *).hash_code();
-
-	const int test_int = 0;
-	std::remove_reference_t<std::remove_cv_t<int>> vh0;
-	std::remove_reference_t<std::remove_cv_t<int&>> vh1;
-	std::remove_reference_t<std::remove_cv_t<int*>> vh2;
-	std::remove_reference_t<std::remove_cv_t<const int>> vh0_c;
-	std::remove_reference_t<std::remove_cv_t<int const &>> vh1_c = test_int;
-	std::remove_reference_t<std::remove_cv_t<const int*>> vh2_c;
-	std::remove_reference_t<std::remove_cv_t<const int*const>> vh2_cc;
+	const int													test_int = 0;
+	std::remove_reference_t<std::remove_cv_t<int>>				vh0;
+	std::remove_reference_t<std::remove_cv_t<int &>>			vh1;
+	std::remove_reference_t<std::remove_cv_t<int *>>			vh2;
+	std::remove_reference_t<std::remove_cv_t<const int>>		vh0_c;
+	std::remove_reference_t<std::remove_cv_t<int const &>>		vh1_c = test_int;
+	std::remove_reference_t<std::remove_cv_t<const int *>>		vh2_c;
+	std::remove_reference_t<std::remove_cv_t<const int *const>> vh2_cc;
 
 	x = std::string( "Meow" ); // x holds string
 	std::string s, s2( "Jane" );
@@ -248,19 +247,19 @@ int main()
 	// explicit template argument list for these function templates. In C++17 std::in_place_type_t<T> is
 	// used for these constructors MyVariant v1<std::string, const char*>("dumdidum");
 
-	const core::any_type_info &u32_id	 = core::any_typeid<u32>();
-	const core::any_type_info &u32_ptr_id = core::any_typeid<u32 *>();
-	const core::any_type_info &string_id  = core::any_typeid<std::string>();
+	const core::type_info &u32_id	 = core::type_id<u32>();
+	const core::type_info &u32_ptr_id = core::type_id<u32 *>();
+	const core::type_info &string_id  = core::type_id<std::string>();
 
-	bool same_types = core::any_typeid<std::string &>() == string_id;
-	same_types		= core::any_typeid<int>() == string_id;
+	bool same_types = core::type_id<std::string &>() == string_id;
+	same_types		= core::type_id<int>() == string_id;
 
 	std::vector<int> vec;
 	vec.push_back( 12 );
 
 	any_user::use_vector();
 
-	if ( core::any_typeid<u32>() == any_user::use_any_id() )
+	if ( core::type_id<u32>() == any_user::use_any_id() )
 	{
 		return 1;
 	}

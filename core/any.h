@@ -3,8 +3,8 @@
 #include <type_traits> // std::aligned_union
 #include <typeinfo>	// std::bad_cast
 
-#ifdef USE_ANY_TYPE_INFO
-#include "core/any_type_info.h"
+#ifdef USE_CORE_TYPE_INFO
+#include "core/type_info.h"
 #endif
 
 // partial implementation of std::any for C++11
@@ -122,15 +122,15 @@ namespace core
 			return ( nullptr != m_VTable );
 		}
 
-#ifdef USE_ANY_TYPE_INFO
+#ifdef USE_CORE_TYPE_INFO
 		// ---------------------------------------------------------------------------
-		const any_type_info &type() const noexcept
+		const type_info &type() const noexcept
 		{
 			if ( has_value() )
 			{
 				return m_VTable->type();
 			}
-			return any_typeid<void>();
+			return type_id<void>();
 		}
 #else
 		// ---------------------------------------------------------------------------
@@ -164,8 +164,8 @@ namespace core
 			// this is the function table definition that will hold the method pointers
 			struct vtable_type
 			{
-#ifdef USE_ANY_TYPE_INFO
-				const any_type_info &( *type )();
+#ifdef USE_CORE_TYPE_INFO
+				const type_info &( *type )();
 #else
 				const std::type_info &( *type )();
 #endif
@@ -178,10 +178,10 @@ namespace core
 			// this is the type-dependent method set for locally allocated values
 			template <class T> struct local_storage
 			{
-#ifdef USE_ANY_TYPE_INFO
-				static const any_type_info &type()
+#ifdef USE_CORE_TYPE_INFO
+				static const type_info &type()
 				{
-					return any_typeid<T>();
+					return type_id<T>();
 				}
 #else
 				static const std::type_info &type()
@@ -216,10 +216,10 @@ namespace core
 			// this is the type-dependent method set for heap allocated values
 			template <class T> struct heap_storage
 			{
-#ifdef USE_ANY_TYPE_INFO
-				static const any_type_info &type()
+#ifdef USE_CORE_TYPE_INFO
+				static const type_info &type()
 				{
-					return any_typeid<T>();
+					return type_id<T>();
 				}
 #else
 				static const std::type_info &type()
@@ -440,8 +440,8 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept
 	{
-#ifdef USE_ANY_TYPE_INFO
-		if ( ( nullptr != _operand ) && ( _operand->type() == any_typeid<ValueType>() ) )
+#ifdef USE_CORE_TYPE_INFO
+		if ( ( nullptr != _operand ) && ( _operand->type() == type_id<ValueType>() ) )
 #else
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
 #endif
@@ -454,8 +454,8 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType *any_cast( any *_operand ) noexcept
 	{
-#ifdef USE_ANY_TYPE_INFO
-		if ( ( nullptr != _operand ) && ( _operand->type() == any_typeid<ValueType>() ) )
+#ifdef USE_CORE_TYPE_INFO
+		if ( ( nullptr != _operand ) && ( _operand->type() == type_id<ValueType>() ) )
 #else
 		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
 #endif

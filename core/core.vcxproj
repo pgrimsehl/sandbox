@@ -180,8 +180,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="any.h" />
-    <ClInclude Include="any_type_info.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="type_info.h" />
     <ClInclude Include="udl.h" />
     <ClInclude Include="udl_crc32.h" />
   </ItemGroup>
