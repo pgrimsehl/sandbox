@@ -1,11 +1,9 @@
 #pragma once
 
-#include <type_traits> // std::aligned_union
-#include <typeinfo>	// std::bad_cast
+#include "core.h"
 
-#ifdef USE_CORE_TYPE_INFO
-#include "core/type_info.h"
-#endif
+#include <type_traits> // std::aligned_union
+
 
 // partial implementation of std::any for C++11
 // (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type,
@@ -122,7 +120,6 @@ namespace core
 			return ( nullptr != m_VTable );
 		}
 
-#ifdef USE_CORE_TYPE_INFO
 		// ---------------------------------------------------------------------------
 		const type_info &type() const noexcept
 		{
@@ -132,17 +129,6 @@ namespace core
 			}
 			return type_id<void>();
 		}
-#else
-		// ---------------------------------------------------------------------------
-		const std::type_info &type() const noexcept
-		{
-			if ( has_value() )
-			{
-				return m_VTable->type();
-			}
-			return typeid( void );
-		}
-#endif
 
 	private:
 		// internal struct for most implementation details
@@ -164,11 +150,7 @@ namespace core
 			// this is the function table definition that will hold the method pointers
 			struct vtable_type
 			{
-#ifdef USE_CORE_TYPE_INFO
 				const type_info &( *type )();
-#else
-				const std::type_info &( *type )();
-#endif
 				void ( *copy_construct )( storage &_dst, const storage &_src );
 				void ( *move_construct )( storage &_dst, storage &_src );
 				void ( *swap )( storage &_dst, storage &_src );
@@ -178,17 +160,10 @@ namespace core
 			// this is the type-dependent method set for locally allocated values
 			template <class T> struct local_storage
 			{
-#ifdef USE_CORE_TYPE_INFO
 				static const type_info &type()
 				{
 					return type_id<T>();
 				}
-#else
-				static const std::type_info &type()
-				{
-					return typeid( T );
-				}
-#endif
 				// construct a new object using T's copy constructor
 				static void copy_construct( storage &_dst, const storage &_src )
 				{
@@ -216,17 +191,10 @@ namespace core
 			// this is the type-dependent method set for heap allocated values
 			template <class T> struct heap_storage
 			{
-#ifdef USE_CORE_TYPE_INFO
 				static const type_info &type()
 				{
 					return type_id<T>();
 				}
-#else
-				static const std::type_info &type()
-				{
-					return typeid( T );
-				}
-#endif
 				// construct a new object on the heap using T's copy constructor
 				static void copy_construct( storage &_dst, const storage &_src )
 				{
@@ -440,11 +408,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept
 	{
-#ifdef USE_CORE_TYPE_INFO
 		if ( ( nullptr != _operand ) && ( _operand->type() == type_id<ValueType>() ) )
-#else
-		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
-#endif
 		{
 			return _operand->cast<ValueType>();
 		}
@@ -454,11 +418,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType> ValueType *any_cast( any *_operand ) noexcept
 	{
-#ifdef USE_CORE_TYPE_INFO
 		if ( ( nullptr != _operand ) && ( _operand->type() == type_id<ValueType>() ) )
-#else
-		if ( ( nullptr != _operand ) && ( _operand->type() == typeid( ValueType ) ) )
-#endif
 		{
 			return _operand->cast<ValueType>();
 		}

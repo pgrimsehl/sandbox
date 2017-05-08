@@ -1,9 +1,6 @@
 #pragma once
 
-namespace core
-{
-	class type_info;
-}
+#include <core/core.h>
 
 namespace any_user
 {

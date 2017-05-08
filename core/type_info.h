@@ -2,8 +2,11 @@
 
 #include <memory> //std::addressof
 
+#include "core/core.h"
+
 namespace core
 {
+#ifdef CORE_NO_STD_TYPE_INFO
 	// ---------------------------------------------------------------------------
 	// The type info instance for each type (equivalent of std::type_info)
 	// ---------------------------------------------------------------------------
@@ -21,17 +24,17 @@ namespace core
 	public:
 		bool operator==( const type_info &_rhs ) const
 		{
-			return std::addressof( *this ) == std::addressof( _rhs );
+			return std::equal_to<const type_info*>{}(std::addressof(*this), std::addressof(_rhs));
 		}
 
 		bool operator!=( const type_info &_rhs ) const
 		{
-			return std::addressof( *this ) != std::addressof( _rhs );
+			return !std::equal_to<const type_info*>{}(std::addressof(*this), std::addressof(_rhs));
 		}
 
 		bool before( const type_info &_rhs ) const
 		{
-			return std::addressof( *this ) < std::addressof( _rhs );
+			return std::less<const type_info*>{}( std::addressof( *this ), std::addressof( _rhs ) );
 		}
 
 		std::size_t hash_code() const
@@ -49,7 +52,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	// Internal wrapper to instantiate a distinct class for each type
 	// ---------------------------------------------------------------------------
-	template <class T> class type_info_wrapper final
+	template <class ValueType> class type_info_wrapper final
 	{
 		type_info_wrapper()							   = delete;
 		type_info_wrapper( type_info_wrapper && )	  = delete;
@@ -60,7 +63,7 @@ namespace core
 
 		template <class T> friend const type_info &type_id();
 	};
-	template <class T> const type_info type_info_wrapper<T>::id;
+	template <class ValueType> const type_info type_info_wrapper<ValueType>::id;
 
 	// ---------------------------------------------------------------------------
 	// The function that returns the type_info instance for a given type (compile-time)
@@ -73,4 +76,12 @@ namespace core
 		return type_info_wrapper<
 			typename std::remove_reference<typename std::remove_cv<ValueType>::type>::type>::id;
 	};
+#else
+	using type_info = std::type_info;
+
+	template <class ValueType> const type_info &type_id()
+	{
+		return typeid(ValueType);
+	};
+#endif
 }
