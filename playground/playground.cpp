@@ -248,6 +248,12 @@ int main()
 	const any y( cat ); // const y holds string
 	assert( any_cast<const std::string &>( y ) == cat );
 	// any_cast<std::string &>( y ); // error; cannot any_cast away const
+	x.emplace<std::string>( "lala" );
+	assert( any_cast<const std::string &>( x ) == "lala" );
+	x.emplace<std::vector<float>>( { 0.0f, 1.0f } );
+	//x.emplace<std::string>({"doean not work!"});
+	x.emplace<std::string>(std::string{ "works!" });
+	x.emplace<std::string>("works!");
 
 	u32 udl0 = "CRC32 UDL"_crc32;
 

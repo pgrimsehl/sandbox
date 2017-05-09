@@ -4,7 +4,6 @@
 
 #include <type_traits> // std::aligned_union
 
-
 // partial implementation of std::any for C++11
 // (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type,
 // for specification)
@@ -14,8 +13,7 @@ namespace core
 	{
 	public:
 		// ---------------------------------------------------------------------------
-		constexpr any() CORE_NOTHROW
-			: m_VTable( nullptr )
+		constexpr any() CORE_NOTHROW : m_VTable( nullptr )
 		{
 		}
 
@@ -40,15 +38,14 @@ namespace core
 		}
 
 		// ---------------------------------------------------------------------------
-		template <class ValueType, typename = typename std::enable_if<!std::is_same<
-									   typename std::decay<ValueType>::type, any>::value>::type>
+		template <class ValueType,
+				  // (N4618 20.8.3.1-9)
+				  typename = typename std::enable_if<
+					  !std::is_same<typename std::decay<ValueType>::type, any>::value &&
+					  std::is_copy_constructible<typename std::decay<ValueType>::type>::value>::type>
 		any( ValueType &&_value )
 		{
-			// (N4618 20.8.3.1-9)
-			static_assert(
-				std::is_copy_constructible<typename std::decay<ValueType>::type>::value,
-				"(N4618 20.8.3.1.11): 'T shall satisfy the CopyConstructible requirements.'" );
-			construct( std::forward<ValueType>( _value ) );
+			construct<ValueType, ValueType>( std::forward<ValueType>( _value ) );
 		}
 
 		// ---------------------------------------------------------------------------
@@ -80,6 +77,32 @@ namespace core
 			// (N4618 20.8.3.2-9)
 			any( std::forward<ValueType>( _rhs ) ).swap( *this );
 			return *this;
+		}
+
+		// ---------------------------------------------------------------------------
+		template <
+			class ValueType, class... Args,
+			// (N4618 20.8.3.3-6)
+			typename = typename std::enable_if<
+				std::is_copy_constructible<typename std::decay<ValueType>::type>::value &&
+				std::is_constructible<typename std::decay<ValueType>::type, Args...>::value>::type>
+		void emplace( Args &&... _args )
+		{
+			reset();
+			construct<ValueType, Args...>( std::forward<Args>( _args )... );
+		}
+
+		// ---------------------------------------------------------------------------
+		template <class ValueType, class U, class... Args,
+				  // (N4618 20.8.3.3-12)
+				  typename = typename std::enable_if<
+					  std::is_copy_constructible<typename std::decay<ValueType>::type>::value &&
+					  std::is_constructible<typename std::decay<ValueType>::type,
+											std::initializer_list<U> &, Args...>::value>::type>
+		void emplace( std::initializer_list<U> _il, Args &&... _args )
+		{
+			reset();
+			construct_il<ValueType, U, Args...>( _il, std::forward<Args>( _args )... );
 		}
 
 		// ---------------------------------------------------------------------------
@@ -235,17 +258,29 @@ namespace core
 			// construction of local values
 			template <class ValueType, class T> struct local_construction
 			{
-				static void construct( ValueType &&_value, storage &_storage )
+				template <class... Args> static void construct( storage &_storage, Args &&... _args )
 				{
-					new ( &_storage.local ) T( std::forward<ValueType>( _value ) );
+					new ( &_storage.local ) T( std::forward<Args>( _args )... );
+				}
+				template <class U, class... Args>
+				static void construct_il( storage &_storage, std::initializer_list<U> _il,
+										  Args &&... _args )
+				{
+					new ( &_storage.local ) T( _il, std::forward<Args>( _args )... );
 				}
 			};
 			// construction of heap values
 			template <class ValueType, class T> struct heap_construction
 			{
-				static void construct( ValueType &&_value, storage &_storage )
+				template <class... Args> static void construct( storage &_storage, Args &&... _args )
 				{
-					_storage.heap = new T( std::forward<ValueType>( _value ) );
+					_storage.heap = new T( std::forward<Args>( _args )... );
+				}
+				template <class U, class... Args>
+				static void construct_il( storage &_storage, std::initializer_list<U> _il,
+										  Args &&... _args )
+				{
+					_storage.heap = new T( _il, std::forward<Args>( _args )... );
 				}
 			};
 
@@ -279,7 +314,7 @@ namespace core
 		// ---------------------------------------------------------------------------
 		// creates the internal representation of _value
 		// ---------------------------------------------------------------------------
-		template <class ValueType> void construct( ValueType &&_value )
+		template <class ValueType, class... Args> void construct( Args &&... _args )
 		{
 			// for all further processing, we use the decay type T of ValueType
 			using T = typename std::decay<ValueType>::type;
@@ -298,7 +333,35 @@ namespace core
 													storage_type::move_construct, storage_type::swap,
 													storage_type::destroy };
 			// construct the value
-			construct_type::construct( std::forward<ValueType>( _value ), m_Storage );
+			construct_type::construct<Args...>( m_Storage, std::forward<Args>( _args )... );
+			// set the vtable pointer
+			m_VTable = &vtable;
+		};
+
+		// ---------------------------------------------------------------------------
+		// creates the internal representation of _value
+		// ---------------------------------------------------------------------------
+		template <class ValueType, class U, class... Args>
+		void construct_il( std::initializer_list<U> _il, Args &&... _args )
+		{
+			// for all further processing, we use the decay type T of ValueType
+			using T = typename std::decay<ValueType>::type;
+			// select heap or local storage
+			using storage_type = typename std::conditional<internal::allocate_on_heap<T>::value,
+														   typename internal::heap_storage<T>,
+														   typename internal::local_storage<T>>::type;
+			// select heap or local construction
+			using construct_type =
+				typename std::conditional<internal::allocate_on_heap<T>::value,
+										  typename internal::heap_construction<ValueType, T>,
+										  typename internal::local_construction<ValueType, T>>::type;
+
+			// the static vtable for this type
+			static internal::vtable_type vtable = { storage_type::type, storage_type::copy_construct,
+													storage_type::move_construct, storage_type::swap,
+													storage_type::destroy };
+			// construct the value
+			construct_type::construct_il<U, Args...>( m_Storage, _il, std::forward<Args>( _args )... );
 			// set the vtable pointer
 			m_VTable = &vtable;
 		};
