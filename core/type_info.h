@@ -17,29 +17,32 @@ namespace core
 		}
 		type_info( type_info && )						   = delete;
 		type_info( const type_info & )					   = delete;
-		type_info &		operator=( const type_info &_rhs ) = delete;
+		type_info &								   operator=( const type_info &_rhs ) = delete;
 		template <class T> friend const type_info &type_id();
 		template <class T> friend class type_info_wrapper;
 
 	public:
 		bool operator==( const type_info &_rhs ) const
 		{
-			return std::equal_to<const type_info*>{}(std::addressof(*this), std::addressof(_rhs));
+			return std::equal_to<const type_info *>{}( std::addressof( *this ),
+													   std::addressof( _rhs ) );
 		}
 
 		bool operator!=( const type_info &_rhs ) const
 		{
-			return !std::equal_to<const type_info*>{}(std::addressof(*this), std::addressof(_rhs));
+			return !std::equal_to<const type_info *>{}( std::addressof( *this ),
+														std::addressof( _rhs ) );
 		}
 
 		bool before( const type_info &_rhs ) const
 		{
-			return std::less<const type_info*>{}( std::addressof( *this ), std::addressof( _rhs ) );
+			return std::less<const type_info *>{}( std::addressof( *this ), std::addressof( _rhs ) );
 		}
 
 		std::size_t hash_code() const
 		{
-			static_assert( sizeof( std::size_t ) >= sizeof( std::uintptr_t ), "pointer does not fit into std::size_t" );
+			static_assert( sizeof( std::size_t ) >= sizeof( std::uintptr_t ),
+						   "pointer does not fit into std::size_t" );
 			return reinterpret_cast<size_t>( std::addressof( *this ) );
 		}
 
@@ -69,19 +72,19 @@ namespace core
 	// The function that returns the type_info instance for a given type (compile-time)
 	// (equivalent of typeid operator)
 	// To match the behavior of the typeid operator ValueType is transformed
-	// using std::remove_reference<typename std::remove_cv<ValueType>::type>::type
+	// using std::decay<ValueType>::type
+	// see N4618 5.2.8-4/5
 	// ---------------------------------------------------------------------------
 	template <class ValueType> const type_info &type_id()
 	{
-		return type_info_wrapper<
-			typename std::remove_reference<typename std::remove_cv<ValueType>::type>::type>::id;
+		return type_info_wrapper<typename std::decay<ValueType>::type>::id;
 	};
 #else
 	using type_info = std::type_info;
 
 	template <class ValueType> const type_info &type_id()
 	{
-		return typeid(ValueType);
+		return typeid( ValueType );
 	};
 #endif
 }

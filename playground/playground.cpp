@@ -174,16 +174,41 @@ int main()
 	core::any_cast<const char *&>( x ) = "Harry";
 	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
 
-	// size_t h0 = typeid(int).hash_code();
-	// size_t h1 = typeid(int&).hash_code();
-	// size_t h2 = typeid(int*).hash_code();
-	// size_t h0_c0 = typeid(const int).hash_code();
-	// size_t h0_c = typeid(int const).hash_code();
-	// size_t h1_c = typeid(int const&).hash_code();
-	// size_t h2_c = typeid(int const*).hash_code();
-	// size_t h2_cc = typeid(int const*const).hash_code();
-	// size_t h1_c0 = typeid(const int &).hash_code();
-	// size_t h2_c0 = typeid(const int *).hash_code();
+	size_t h0   = typeid( int ).hash_code();
+	size_t h1   = typeid( int & ).hash_code();
+	size_t h2   = typeid( int * ).hash_code();
+	size_t h3   = typeid( int *const ).hash_code();
+	size_t h0_c = typeid( int const ).hash_code();
+	size_t h1_c = typeid( int const & ).hash_code();
+	size_t h2_c = typeid( int const * ).hash_code();
+	size_t h3_c = typeid( int const *const ).hash_code();
+
+	size_t ch0   = core::type_id<int>().hash_code();
+	size_t ch1   = core::type_id<int &>().hash_code();
+	size_t ch2   = core::type_id<int *>().hash_code();
+	size_t ch3   = core::type_id<int *const>().hash_code();
+	size_t ch0_c = core::type_id<int const>().hash_code();
+	size_t ch1_c = core::type_id<int const &>().hash_code();
+	size_t ch2_c = core::type_id<int const *>().hash_code();
+	size_t ch3_c = core::type_id<int const *const>().hash_code();
+
+	int				 a0;
+	int &			 a1 = a0;
+	int *			 a2;
+	int *const		 a3   = nullptr;
+	int const		 a0_c = 0;
+	int const &		 a1_c = a0;
+	int const *		 a2_c;
+	int const *const a3_c = nullptr;
+
+	size_t ha0   = typeid( a0 ).hash_code();
+	size_t ha1   = typeid( a1 ).hash_code();
+	size_t ha2   = typeid( a2 ).hash_code();
+	size_t ha3   = typeid( a3 ).hash_code();
+	size_t ha0_c = typeid( a0_c ).hash_code();
+	size_t ha1_c = typeid( a1_c ).hash_code();
+	size_t ha2_c = typeid( a2_c ).hash_code();
+	size_t ha3_c = typeid( a3_c ).hash_code();
 
 	const int													test_int = 0;
 	std::remove_reference_t<std::remove_cv_t<int>>				vh0;
