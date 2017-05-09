@@ -8,7 +8,7 @@
 #define CORE_CATCH_END		} }
 #define CORE_RAISE(x)
 #define CORE_RERAISE
-#define CORE_THROW0()
+#define CORE_NOTHROW
 #define CORE_THROW(x, y)
 
 #else /* CORE_USE_EXCEPTIONS */
@@ -19,7 +19,7 @@
 #define CORE_CATCH_END		}
 #define CORE_RAISE(x)		throw x
 #define CORE_RERAISE		throw
-#define CORE_THROW0()		noexcept
+#define CORE_NOTHROW		noexcept
 #define CORE_THROW(x, y)	throw x(y)
 
 #endif /* CORE_USE_EXCEPTIONS */

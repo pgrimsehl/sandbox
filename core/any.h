@@ -14,7 +14,7 @@ namespace core
 	{
 	public:
 		// ---------------------------------------------------------------------------
-		constexpr any() noexcept
+		constexpr any() CORE_NOTHROW
 			: m_VTable( nullptr )
 		{
 		}
@@ -30,7 +30,7 @@ namespace core
 		}
 
 		// ---------------------------------------------------------------------------
-		any( any &&_other ) noexcept
+		any( any &&_other ) CORE_NOTHROW
 		{
 			if ( _other.has_value() )
 			{
@@ -67,7 +67,7 @@ namespace core
 		}
 
 		// ---------------------------------------------------------------------------
-		any &operator=( any &&_rhs ) noexcept
+		any &operator=( any &&_rhs ) CORE_NOTHROW
 		{
 			// (N4618 20.8.3.2-4)
 			any( std::move( _rhs ) ).swap( *this );
@@ -83,7 +83,7 @@ namespace core
 		}
 
 		// ---------------------------------------------------------------------------
-		void reset() noexcept
+		void reset() CORE_NOTHROW
 		{
 			// (N4618 20.8.3.3-13)
 			if ( has_value() )
@@ -94,7 +94,7 @@ namespace core
 		}
 
 		// ---------------------------------------------------------------------------
-		void swap( any &_rhs ) noexcept
+		void swap( any &_rhs ) CORE_NOTHROW
 		{
 			if ( this != &_rhs )
 			{
@@ -115,13 +115,13 @@ namespace core
 		}
 
 		// ---------------------------------------------------------------------------
-		bool has_value() const noexcept
+		bool has_value() const CORE_NOTHROW
 		{
 			return ( nullptr != m_VTable );
 		}
 
 		// ---------------------------------------------------------------------------
-		const type_info &type() const noexcept
+		const type_info &type() const CORE_NOTHROW
 		{
 			if ( has_value() )
 			{
@@ -329,8 +329,8 @@ namespace core
 		internal::vtable_type *m_VTable = nullptr;
 
 		// any_cast must be a friend
-		template <class ValueType> friend const ValueType *any_cast( const any *_operand ) noexcept;
-		template <class ValueType> friend ValueType *	  any_cast( any *_operand ) noexcept;
+		template <class ValueType> friend const ValueType *any_cast( const any *_operand ) CORE_NOTHROW;
+		template <class ValueType> friend ValueType *	  any_cast( any *_operand ) CORE_NOTHROW;
 	};
 
 	// ---------------------------------------------------------------------------
@@ -339,7 +339,7 @@ namespace core
 	class bad_any_cast : public std::bad_cast
 	{
 	public:
-		const char *what() const noexcept override
+		const char *what() const CORE_NOTHROW override
 		{
 			return "bad any cast";
 		}
@@ -348,7 +348,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	// swap
 	// ---------------------------------------------------------------------------
-	inline void swap( any &_x, any &_y ) noexcept
+	inline void swap( any &_x, any &_y ) CORE_NOTHROW
 	{
 		// N4618 20.8.4-1
 		_x.swap( _y );
@@ -372,7 +372,7 @@ namespace core
 				&_operand );
 		if ( nullptr == result )
 		{
-			throw bad_any_cast();
+			CORE_RAISE( bad_any_cast() );
 		}
 		return *result;
 	}
@@ -386,7 +386,7 @@ namespace core
 		auto result = any_cast<typename std::remove_reference<ValueType>::type>( &_operand );
 		if ( nullptr == result )
 		{
-			throw bad_any_cast();
+			CORE_RAISE( bad_any_cast() );
 		}
 		return *result;
 	}
@@ -400,13 +400,13 @@ namespace core
 		auto result = any_cast<typename std::remove_reference<ValueType>::type>( &_operand );
 		if ( nullptr == result )
 		{
-			throw bad_any_cast();
+			CORE_RAISE( bad_any_cast() );
 		}
 		return *result;
 	}
 
 	// ---------------------------------------------------------------------------
-	template <class ValueType> const ValueType *any_cast( const any *_operand ) noexcept
+	template <class ValueType> const ValueType *any_cast( const any *_operand ) CORE_NOTHROW
 	{
 		if ( ( nullptr != _operand ) && ( _operand->type() == type_id<ValueType>() ) )
 		{
@@ -416,7 +416,7 @@ namespace core
 	}
 
 	// ---------------------------------------------------------------------------
-	template <class ValueType> ValueType *any_cast( any *_operand ) noexcept
+	template <class ValueType> ValueType *any_cast( any *_operand ) CORE_NOTHROW
 	{
 		if ( ( nullptr != _operand ) && ( _operand->type() == type_id<ValueType>() ) )
 		{

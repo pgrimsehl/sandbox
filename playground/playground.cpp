@@ -174,23 +174,41 @@ int main()
 	core::any_cast<const char *&>( x ) = "Harry";
 	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
 
-	size_t h0   = typeid( int ).hash_code();
-	size_t h1   = typeid( int & ).hash_code();
-	size_t h2   = typeid( int * ).hash_code();
-	size_t h3   = typeid( int *const ).hash_code();
-	size_t h0_c = typeid( int const ).hash_code();
-	size_t h1_c = typeid( int const & ).hash_code();
-	size_t h2_c = typeid( int const * ).hash_code();
-	size_t h3_c = typeid( int const *const ).hash_code();
+	size_t h0   = typeid( A ).hash_code();
+	size_t h1   = typeid( A & ).hash_code();
+	size_t h2   = typeid( A * ).hash_code();
+	size_t h3   = typeid( A *const ).hash_code();
+	size_t h0_c = typeid( A const ).hash_code();
+	size_t h1_c = typeid( A const & ).hash_code();
+	size_t h2_c = typeid( A const * ).hash_code();
+	size_t h3_c = typeid( A const *const ).hash_code();
 
-	size_t ch0   = core::type_id<int>().hash_code();
-	size_t ch1   = core::type_id<int &>().hash_code();
-	size_t ch2   = core::type_id<int *>().hash_code();
-	size_t ch3   = core::type_id<int *const>().hash_code();
-	size_t ch0_c = core::type_id<int const>().hash_code();
-	size_t ch1_c = core::type_id<int const &>().hash_code();
-	size_t ch2_c = core::type_id<int const *>().hash_code();
-	size_t ch3_c = core::type_id<int const *const>().hash_code();
+	size_t g0   = typeid( SubA ).hash_code();
+	size_t g1   = typeid( SubA & ).hash_code();
+	size_t g2   = typeid( SubA * ).hash_code();
+	size_t g3   = typeid( SubA *const ).hash_code();
+	size_t g0_c = typeid( SubA const ).hash_code();
+	size_t g1_c = typeid( SubA const & ).hash_code();
+	size_t g2_c = typeid( SubA const * ).hash_code();
+	size_t g3_c = typeid( SubA const *const ).hash_code();
+
+	size_t ch0   = core::type_id<A>().hash_code();
+	size_t ch1   = core::type_id<A &>().hash_code();
+	size_t ch2   = core::type_id<A *>().hash_code();
+	size_t ch3   = core::type_id<A *const>().hash_code();
+	size_t ch0_c = core::type_id<A const>().hash_code();
+	size_t ch1_c = core::type_id<A const &>().hash_code();
+	size_t ch2_c = core::type_id<A const *>().hash_code();
+	size_t ch3_c = core::type_id<A const *const>().hash_code();
+
+	size_t cg0   = core::type_id<SubA>().hash_code();
+	size_t cg1   = core::type_id<SubA &>().hash_code();
+	size_t cg2   = core::type_id<SubA *>().hash_code();
+	size_t cg3   = core::type_id<SubA *const>().hash_code();
+	size_t cg0_c = core::type_id<SubA const>().hash_code();
+	size_t cg1_c = core::type_id<SubA const &>().hash_code();
+	size_t cg2_c = core::type_id<SubA const *>().hash_code();
+	size_t cg3_c = core::type_id<SubA const *const>().hash_code();
 
 	int				 a0;
 	int &			 a1 = a0;

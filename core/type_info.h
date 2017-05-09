@@ -12,7 +12,7 @@ namespace core
 	// ---------------------------------------------------------------------------
 	class type_info final
 	{
-		constexpr type_info() noexcept
+		constexpr type_info() CORE_NOTHROW
 		{
 		}
 		type_info( type_info && )						   = delete;
