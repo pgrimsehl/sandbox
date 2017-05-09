@@ -1,8 +1,8 @@
 #pragma once
 
-#include <memory> //std::addressof
-
 #include "core.h"
+
+#include <memory> //std::addressof
 
 namespace core
 {

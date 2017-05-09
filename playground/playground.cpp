@@ -174,69 +174,6 @@ int main()
 	core::any_cast<const char *&>( x ) = "Harry";
 	assert( strcmp( core::any_cast<const char *>( x ), "Harry" ) == 0 );
 
-	size_t h0   = typeid( A ).hash_code();
-	size_t h1   = typeid( A & ).hash_code();
-	size_t h2   = typeid( A * ).hash_code();
-	size_t h3   = typeid( A *const ).hash_code();
-	size_t h0_c = typeid( A const ).hash_code();
-	size_t h1_c = typeid( A const & ).hash_code();
-	size_t h2_c = typeid( A const * ).hash_code();
-	size_t h3_c = typeid( A const *const ).hash_code();
-
-	size_t g0   = typeid( SubA ).hash_code();
-	size_t g1   = typeid( SubA & ).hash_code();
-	size_t g2   = typeid( SubA * ).hash_code();
-	size_t g3   = typeid( SubA *const ).hash_code();
-	size_t g0_c = typeid( SubA const ).hash_code();
-	size_t g1_c = typeid( SubA const & ).hash_code();
-	size_t g2_c = typeid( SubA const * ).hash_code();
-	size_t g3_c = typeid( SubA const *const ).hash_code();
-
-	size_t ch0   = core::type_id<A>().hash_code();
-	size_t ch1   = core::type_id<A &>().hash_code();
-	size_t ch2   = core::type_id<A *>().hash_code();
-	size_t ch3   = core::type_id<A *const>().hash_code();
-	size_t ch0_c = core::type_id<A const>().hash_code();
-	size_t ch1_c = core::type_id<A const &>().hash_code();
-	size_t ch2_c = core::type_id<A const *>().hash_code();
-	size_t ch3_c = core::type_id<A const *const>().hash_code();
-
-	size_t cg0   = core::type_id<SubA>().hash_code();
-	size_t cg1   = core::type_id<SubA &>().hash_code();
-	size_t cg2   = core::type_id<SubA *>().hash_code();
-	size_t cg3   = core::type_id<SubA *const>().hash_code();
-	size_t cg0_c = core::type_id<SubA const>().hash_code();
-	size_t cg1_c = core::type_id<SubA const &>().hash_code();
-	size_t cg2_c = core::type_id<SubA const *>().hash_code();
-	size_t cg3_c = core::type_id<SubA const *const>().hash_code();
-
-	int				 a0;
-	int &			 a1 = a0;
-	int *			 a2;
-	int *const		 a3   = nullptr;
-	int const		 a0_c = 0;
-	int const &		 a1_c = a0;
-	int const *		 a2_c;
-	int const *const a3_c = nullptr;
-
-	size_t ha0   = typeid( a0 ).hash_code();
-	size_t ha1   = typeid( a1 ).hash_code();
-	size_t ha2   = typeid( a2 ).hash_code();
-	size_t ha3   = typeid( a3 ).hash_code();
-	size_t ha0_c = typeid( a0_c ).hash_code();
-	size_t ha1_c = typeid( a1_c ).hash_code();
-	size_t ha2_c = typeid( a2_c ).hash_code();
-	size_t ha3_c = typeid( a3_c ).hash_code();
-
-	const int													test_int = 0;
-	std::remove_reference_t<std::remove_cv_t<int>>				vh0;
-	std::remove_reference_t<std::remove_cv_t<int &>>			vh1;
-	std::remove_reference_t<std::remove_cv_t<int *>>			vh2;
-	std::remove_reference_t<std::remove_cv_t<const int>>		vh0_c;
-	std::remove_reference_t<std::remove_cv_t<int const &>>		vh1_c = test_int;
-	std::remove_reference_t<std::remove_cv_t<const int *>>		vh2_c;
-	std::remove_reference_t<std::remove_cv_t<const int *const>> vh2_cc;
-
 	x = std::string( "Meow" ); // x holds string
 	std::string s, s2( "Jane" );
 	s = std::move( any_cast<std::string &>( x ) ); // move from any
@@ -257,6 +194,8 @@ int main()
 
 	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
 	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );
+
+	core::any z( core::in_place_type<std::vector<int>>, { 1, 2, 3 } );
 
 	u32 udl0 = "CRC32 UDL"_crc32;
 

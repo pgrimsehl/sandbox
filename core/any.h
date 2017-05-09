@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.h"
+#include "utility.h"
 
 #include <type_traits> // std::aligned_union
 
@@ -9,6 +10,9 @@
 // for specification)
 // using std::enable_if for SFINAE (for example, see http://en.cppreference.com/w/cpp/language/sfinae
 // for explanation)
+// using core::in_place_type as replacement for std::in_place_type from C++14
+// using core::type_info and core::type_id as wrapper for std::type_info and operator typeid
+// to have type information even if typeid operator cannot be used (rtti turned off)
 namespace core
 {
 	class any final
@@ -49,6 +53,30 @@ namespace core
 		any( ValueType &&_value )
 		{
 			construct<ValueType, ValueType>( std::forward<ValueType>( _value ) );
+		}
+
+		// ---------------------------------------------------------------------------
+		template <
+			class ValueType, class... Args,
+			// (N4618 20.8.3.1-16)
+			typename = typename std::enable_if<
+				std::is_copy_constructible<typename std::decay<ValueType>::type>::value &&
+				std::is_constructible<typename std::decay<ValueType>::type, Args...>::value>::type>
+		explicit any( in_place_type_t<ValueType>, Args &&... _args )
+		{
+			construct<ValueType, Args...>( std::forward<Args>( _args )... );
+		}
+
+		// ---------------------------------------------------------------------------
+		template <class ValueType, class U, class... Args,
+				  // (N4618 20.8.3.1-22)
+				  typename = typename std::enable_if<
+					  std::is_copy_constructible<typename std::decay<ValueType>::type>::value &&
+					  std::is_constructible<typename std::decay<ValueType>::type,
+											std::initializer_list<U> &, Args...>::value>::type>
+		explicit any( in_place_type_t<ValueType>, std::initializer_list<U> _il, Args &&... _args )
+		{
+			construct_il<ValueType, U, Args...>( _il, std::forward<Args>( _args )... );
 		}
 
 		// ---------------------------------------------------------------------------
