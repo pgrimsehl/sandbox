@@ -7,6 +7,7 @@
 // partial implementation of std::any for C++11
 // (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type,
 // for specification)
+// using std::enable_if for SFINAE (for example, see http://en.cppreference.com/w/cpp/language/sfinae for explanation)
 namespace core
 {
 	class any final
@@ -333,7 +334,7 @@ namespace core
 													storage_type::move_construct, storage_type::swap,
 													storage_type::destroy };
 			// construct the value
-			construct_type::construct<Args...>( m_Storage, std::forward<Args>( _args )... );
+			construct_type::template construct<Args...>( m_Storage, std::forward<Args>( _args )... );
 			// set the vtable pointer
 			m_VTable = &vtable;
 		};
@@ -361,7 +362,7 @@ namespace core
 													storage_type::move_construct, storage_type::swap,
 													storage_type::destroy };
 			// construct the value
-			construct_type::construct_il<U, Args...>( m_Storage, _il, std::forward<Args>( _args )... );
+			construct_type::template construct_il<U, Args...>( m_Storage, _il, std::forward<Args>( _args )... );
 			// set the vtable pointer
 			m_VTable = &vtable;
 		};

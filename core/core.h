@@ -1,6 +1,6 @@
 #pragma once
 
-#if CORE_NO_EXCEPTIONS
+#ifdef CORE_NO_EXCEPTIONS
 
 #define CORE_TRY_BEGIN		{ if (1) {
 #define CORE_CATCH(x)		} else if (0) {
@@ -24,10 +24,4 @@
 
 #endif /* CORE_USE_EXCEPTIONS */
 
-#ifdef CORE_NO_STD_TYPE_INFO
-#include "core/type_info.h"
-#else
-#include <typeinfo>
-#endif
-
-
+#include "type_info.h"

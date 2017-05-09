@@ -2,7 +2,7 @@
 
 #include <memory> //std::addressof
 
-#include "core/core.h"
+#include "core.h"
 
 namespace core
 {
