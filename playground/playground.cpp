@@ -251,9 +251,12 @@ int main()
 	x.emplace<std::string>( "lala" );
 	assert( any_cast<const std::string &>( x ) == "lala" );
 	x.emplace<std::vector<float>>( { 0.0f, 1.0f } );
-	//x.emplace<std::string>({"doean not work!"});
-	x.emplace<std::string>(std::string{ "works!" });
-	x.emplace<std::string>("works!");
+	// x.emplace<std::string>({"doean not work!"});
+	x.emplace<std::string>( std::string{ "works!" } );
+	x.emplace<std::string>( "works!" );
+
+	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
+	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );
 
 	u32 udl0 = "CRC32 UDL"_crc32;
 

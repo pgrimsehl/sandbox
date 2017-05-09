@@ -35,6 +35,7 @@ namespace core
 			if ( _other.has_value() )
 			{
 				_other.m_VTable->move_construct( m_Storage, _other.m_Storage );
+				m_VTable		= _other.m_VTable;
 				_other.m_VTable = nullptr;
 			}
 		}
