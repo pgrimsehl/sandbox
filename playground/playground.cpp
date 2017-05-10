@@ -14,8 +14,11 @@
 #include <test_lib/any_user.h>
 
 #include <cassert>
+#include <istream>
+#include <ostream>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 class A
@@ -159,6 +162,83 @@ std::remove_reference_t<char *>		  r2;
 std::remove_reference_t<const char *> r3;
 std::remove_reference_t<char &>		  r4;
 std::remove_reference_t<const char &> r5 = r1;
+
+namespace core
+{
+	template <typename ValueType, typename OStream, typename IStream> struct serializer final
+	{
+		serializer()					 = delete;
+		serializer( const serializer & ) = delete;
+		serializer( serializer && )		 = delete;
+
+		template <typename... Args> void load( ValueType &_value, IStream, Args &&... );
+		template <typename... Args> void store( const ValueType &_value, OStream, Args &&...... ) const;
+	};
+}
+
+// specialize for std::streams
+template <typename ValueType> struct core::serializer<ValueType, std::ostream, std::istream> final
+{
+	serializer()					 = default;
+	serializer( const serializer & ) = delete;
+	serializer( serializer && )		 = delete;
+
+	using value_type   = ValueType;
+	using ostream_type = std::ostream;
+	using istream_type = std::ostream;
+
+	void load( ValueType &_value, istream_type &_in )
+	{
+		_in >> _value;
+	};
+	void store( const ValueType &_value, ostream_type &_out ) const
+	{
+		_out << _value;
+	};
+};
+
+namespace core
+{
+	using IArchive = std::istream;
+	using OArchive = std::ostream;
+};
+
+template <typename... Ts> struct any_serializable_types
+{
+	using raw_types		= mp::tl::typelist<Ts...>;
+	using decayed_types = mp::fn::transform_t<raw_types, std::decay_t>;
+	using unique_types  = mp::tl::unique_t<decayed_types>;
+};
+
+struct any_serializer : public any_serializable_types<i8, u8, i16, u16, i32, u32, i64, u64, f32, f64>
+{
+	using store_func = void ( * )( const core::any &_any, core::OArchive &_ar );
+	using load_func  = void ( * )( core::any &_any, const core::OArchive &_ar );
+
+	template <typename ValueType> struct type_serializer
+	{
+		static void store( const core::any &_any, core::OArchive &_ar )
+		{
+			_ar << any_cast<const ValueType &>( _any );
+		}
+		static void load( core::any &_any, const core::OArchive &_ar )
+		{
+			_ar >> any_cast<ValueType &>( _any );
+		}
+	};
+
+
+};
+
+any_serializer as;
+
+void any_store( const core::any &_any, core::OArchive &_ar )
+{
+}
+
+void any_load( core::any &_any, core::IArchive &_ar )
+{
+}
 
 int main()
 {
