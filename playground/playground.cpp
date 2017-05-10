@@ -203,15 +203,13 @@ namespace core
 	using OArchive = std::ostream;
 };
 
-template <typename... Ts> struct any_serializable_types
+template <typename... Ts> struct any_serializer_base
 {
 	using raw_types		= mp::tl::typelist<Ts...>;
 	using decayed_types = mp::fn::transform_t<raw_types, std::decay_t>;
 	using unique_types  = mp::tl::unique_t<decayed_types>;
-};
+	using unique_count  = mp::tl::list_size<unique_types>;
 
-struct any_serializer : public any_serializable_types<i8, u8, i16, u16, i32, u32, i64, u64, f32, f64>
-{
 	using store_func = void ( * )( const core::any &_any, core::OArchive &_ar );
 	using load_func  = void ( * )( core::any &_any, const core::OArchive &_ar );
 
@@ -227,10 +225,42 @@ struct any_serializer : public any_serializable_types<i8, u8, i16, u16, i32, u32
 		}
 	};
 
+	template <template <typename... Us> class L> struct function_mgr
+	{
+		static store_func store_funcs[ unique_count::value ];
+		static load_func  load_funcs[ unique_count::value ];
+	};
 
+	using func_mgr = function_mgr<unique_types>;
+};
+
+template <typename... Ts>
+template <template <typename... Us> class L>
+typename any_serializer_base<Ts...>::function_mgr<L>::store_func any_serializer_base<
+	Ts...>::function_mgr<L>::store_funcs[ any_serializer_base<Ts...>::unique_count::value ] = {
+	&any_serializer_base<Ts...>::type_serializer<Us>::store...
+};
+
+template <typename... Ts>
+template <template <typename... Us> class L>
+typename any_serializer_base<Ts...>::function_mgr<L>::load_func any_serializer_base<
+	Ts...>::function_mgr<L>::load_funcs[any_serializer_base<Ts...>::unique_count::value] = {
+	&any_serializer_base<Ts...>::type_serializer<Us>::load...
+};
+
+// template <typename... Ts>
+// template <typename... Us>
+// typename any_serializer_base<Ts...>::function_mgr<Us...>::load_func = {
+//	any_serializer_base<Ts...>::type_serializer<Us>::load...
+//};
+
+struct any_serializer : public any_serializer_base<i8, u8, i16, u16, i32, u32, i64, u64, f32, f64>
+{
 };
 
 any_serializer as;
+
+//any_serializer::store_funcs[ 0 ]
 
 void any_store( const core::any &_any, core::OArchive &_ar )
 {
