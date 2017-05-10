@@ -452,18 +452,14 @@ namespace core
 	// ---------------------------------------------------------------------------
 	template <class ValueType, class... Args> any make_any( Args &&... _args )
 	{
-		any a;
-		a.emplace<ValueType>( _args... );
-		return a;
+		return any(core::in_place_type<ValueType>, _args...);
 	}
 
 	// ---------------------------------------------------------------------------
 	template <class ValueType, class U, class... Args>
 	any make_any( std::initializer_list<U> _il, Args &&... _args )
 	{
-		any a;
-		a.emplace<ValueType>( _il, _args... );
-		return a;
+		return any( core::in_place_type<ValueType>, _il, _args... );
 	}
 
 	// ---------------------------------------------------------------------------
