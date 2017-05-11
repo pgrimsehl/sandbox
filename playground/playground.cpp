@@ -196,6 +196,34 @@ namespace core
 		};
 
 		using functions = func_wrapper<unique_types>;
+
+		template <typename... Args> static void store( const any &_any, Args &&... _args )
+		{
+			// linear search
+			for ( type_id_type type_id = 0; static_cast<type_id_type>( type_count::value ) > type_id;
+				  ++type_id )
+			{
+				if ( functions::type_funcs[ type_id ]() == _any.type() )
+				{
+					traits_type::storeTypeId( type_id, std::forward<Args>(_args)...);
+					any_serializer::functions::store_funcs[ type_id ]( _any,
+																	   std::forward<Args>( _args )... );
+					return;
+				}
+			}
+			// CORE_RAISE();
+		}
+
+		template <typename... Args> static void load( any &_any, Args &&... _args )
+		{
+			type_id_type type_id = traits_type::loadTypeId( std::forward<Args>(_args)...);
+			if ( any_serializer::type_count::value > type_id )
+			{
+				functions::load_funcs[ type_id ]( _any, std::forward<Args>( _args )... );
+				return;
+			}
+			// CORE_RAISE( );
+		}
 	};
 
 	template <class Traits, typename... ValueTypes>
@@ -222,62 +250,73 @@ namespace core
 
 } // core
 
-template <typename ValueType> struct type_serializer
-{
-	static void store( const core::any &_any, std::ostream &_ar )
-	{
-		_ar << core::any_cast<const ValueType &>( _any );
-	}
-	static void load( core::any &_any, std::istream &_ar )
-	{
-		_ar >> core::any_cast<ValueType &>( _any );
-	}
-	static const core::type_info &type()
-	{
-		return core::type_id<ValueType>();
-	}
-};
-
 struct serializer_traits
 {
-	template <typename ValueType> using type_serializer_type = type_serializer<ValueType>;
+	template <typename ValueType> struct type_serializer_type
+	{
+		static void store(const core::any &_any, std::ostream &_ar)
+		{
+			_ar << core::any_cast<const ValueType &>(_any);
+		}
+		static void load(core::any &_any, std::istream &_ar)
+		{
+			_ar >> core::any_cast<ValueType &>(_any);
+		}
+		static const core::type_info &type()
+		{
+			return core::type_id<ValueType>();
+		}
+	};
+
 	using store_func_type = void ( * )( const core::any &_any, std::ostream &_ar );
 	using load_func_type  = void ( * )( core::any &_any, std::istream &_ar );
 	using type_func_type  = const core::type_info &(*)();
 	using type_id_type	= size_t;
+
+	static type_id_type loadTypeId( std::istream &_ar )
+	{
+		type_id_type type_id;
+		_ar >> type_id;
+		return type_id;
+	}
+
+	static void storeTypeId(type_id_type _type_id, std::ostream &_ar)
+	{
+		_ar << _type_id;
+	}
 };
 
 struct any_serializer : public core::any_serializer_base<serializer_traits, i8, u8, i16, u16, i32, u32,
 														 i64, u64, f32, f64, std::string>
 {
-	static void store( const core::any &_any, std::ostream &_ar )
-	{
-		// linear search
-		for ( any_serializer::type_id_type type_id = 0;
-			  static_cast<any_serializer::type_id_type>( any_serializer::type_count::value ) > type_id;
-			  ++type_id )
-		{
-			if ( any_serializer::functions::type_funcs[ type_id ]() == _any.type() )
-			{
-				_ar << type_id;
-				any_serializer::functions::store_funcs[ type_id ]( _any, _ar );
-				return;
-			}
-		}
-		// CORE_RAISE( );
-	}
+	// static void store( const core::any &_any, std::ostream &_ar )
+	//{
+	//	// linear search
+	//	for ( any_serializer::type_id_type type_id = 0;
+	//		  static_cast<any_serializer::type_id_type>( any_serializer::type_count::value ) > type_id;
+	//		  ++type_id )
+	//	{
+	//		if ( any_serializer::functions::type_funcs[ type_id ]() == _any.type() )
+	//		{
+	//			_ar << type_id;
+	//			any_serializer::functions::store_funcs[ type_id ]( _any, _ar );
+	//			return;
+	//		}
+	//	}
+	//	// CORE_RAISE( );
+	//}
 
-	static void load( core::any &_any, std::istream &_ar )
-	{
-		any_serializer::type_id_type type_id;
-		_ar >> type_id;
-		if ( any_serializer::type_count::value > type_id )
-		{
-			any_serializer::functions::load_funcs[ type_id ]( _any, _ar );
-			return;
-		}
-		// CORE_RAISE( );
-	}
+	// static void load( core::any &_any, std::istream &_ar )
+	//{
+	//	any_serializer::type_id_type type_id;
+	//	_ar >> type_id;
+	//	if ( any_serializer::type_count::value > type_id )
+	//	{
+	//		any_serializer::functions::load_funcs[ type_id ]( _any, _ar );
+	//		return;
+	//	}
+	//	// CORE_RAISE( );
+	//}
 };
 
 int main()
@@ -315,6 +354,8 @@ int main()
 	std::cout << "lalala\n";
 
 	any_serializer::store( x, std::cout );
+	any_serializer::load( x, std::cin );
+	std::cout << any_cast<const std::string&>(x);
 
 	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
 	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );

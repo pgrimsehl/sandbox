@@ -7,6 +7,7 @@
     <ClCompile>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;CORE_NO_STD_TYPE_INFO;CORE_NO_EXCEPTIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Enabled</ExceptionHandling>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
