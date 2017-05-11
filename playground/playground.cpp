@@ -166,129 +166,19 @@ std::remove_reference_t<const char &> r5 = r1;
 
 namespace core
 {
-	using IArchive = std::istream;
-	using OArchive = std::ostream;
-};
-
-// using store_func = void ( * )( const core::any &_any, core::OArchive &_ar );
-// using load_func  = void ( * )( core::any &_any, core::IArchive &_ar );
-// using type_func  = const core::type_info &(*)();
-//
-// template <typename ValueType> struct type_serializer
-//{
-//	static void store( const core::any &_any, core::OArchive &_ar )
-//	{
-//		_ar << core::any_cast<const ValueType &>( _any );
-//	}
-//	static void load( core::any &_any, core::IArchive &_ar )
-//	{
-//		_ar >> core::any_cast<ValueType &>( _any );
-//	}
-//	static const core::type_info &type()
-//	{
-//		return core::type_id<ValueType>();
-//	}
-//};
-//
-// template <class L> struct function_mgr;
-// template <template <typename...> class L, typename... Ts> struct function_mgr<L<Ts...>>
-//{
-//	constexpr function_mgr() = default;
-//	using type_count		 = mp::tl::list_size<L<Ts...>>;
-//	static store_func store_funcs[ type_count::value ];
-//	static load_func  load_funcs[ type_count::value ];
-//	static type_func  type_funcs[ type_count::value ];
-//};
-//
-// template <template <typename...> class L, typename... Ts>
-// store_func function_mgr<L<Ts...>>::store_funcs[ function_mgr<L<Ts...>>::type_count::value ] = {
-//	type_serializer<Ts>::store...
-//};
-// template <template <typename...> class L, typename... Ts>
-// load_func function_mgr<L<Ts...>>::load_funcs[ function_mgr<L<Ts...>>::type_count::value ] = {
-//	type_serializer<Ts>::load...
-//};
-// template <template <typename...> class L, typename... Ts>
-// type_func function_mgr<L<Ts...>>::type_funcs[ function_mgr<L<Ts...>>::type_count::value ] = {
-//	type_serializer<Ts>::type...
-//};
-//
-// using test_list = mp::tl::typelist<char, int, float>;
-//
-// function_mgr<test_list> test_mgr;
-
-// template <typename... Ts> struct any_serializer_base
-//{
-//	using raw_types		= mp::tl::typelist<Ts...>;
-//	using decayed_types = mp::fn::transform_t<raw_types, std::decay_t>;
-//	using unique_types  = mp::tl::unique_t<decayed_types>;
-//	using unique_count  = mp::tl::list_size<unique_types>;
-//	using size_type		= std::size_t;
-//
-//	using store_func = void ( * )( const core::any &_any, core::OArchive &_ar );
-//	using load_func  = void ( * )( core::any &_any, const core::OArchive &_ar );
-//
-//	template <typename ValueType> struct type_serializer
-//	{
-//		static void store( const core::any &_any, core::OArchive &_ar )
-//		{
-//			_ar << any_cast<const ValueType &>( _any );
-//		}
-//		static void load( core::any &_any, const core::OArchive &_ar )
-//		{
-//			_ar >> any_cast<ValueType &>( _any );
-//		}
-//	};
-//
-//	template <class L> struct function_mgr;
-//	template <template <typename...> class L, typename... Ts> struct function_mgr<L<Ts...>>
-//	{
-//		constexpr function_mgr()
-//		{
-//		}
-//
-//		using type_count = mp::tl::list_size<L<Ts...>>;
-//		static store_func store_funcs[ type_count::value ];
-//		static load_func  load_funcs[ type_count::value ];
-//	};
-//
-//	using functions = function_mgr<unique_types>;
-//};
-
-// template <typename... Ts>
-// template <template <typename...> class L, typename... Us>
-// typename any_serializer_base<Ts...>::template function_mgr<L<Us...>>::store_func any_serializer_base<
-//	Ts...>::template function_mgr<L<Us...>>::store_funcs[ any_serializer_base<Ts...>::template
-// function_mgr<L<Us...>>::type_count::value ] = {
-//	&any_serializer_base<Ts...>::type_serializer<Us>::store...
-//};
-
-// template <typename... Ts>
-// template <template <typename...> class L, typename ...Us>
-// typename any_serializer_base<Ts...>::template function_mgr<L<Us...>>::load_func any_serializer_base<
-//	Ts...>::template function_mgr<L<Us...>>::load_funcs[any_serializer_base<Ts...>::unique_count::value]
-//= { 	&any_serializer_base<Ts...>::type_serializer<Us>::load...
-//};
-
-// template <typename... Ts>
-// template <typename... Us>
-// typename any_serializer_base<Ts...>::function_mgr<Us...>::load_func = {
-//	any_serializer_base<Ts...>::type_serializer<Us>::load...
-//};
-namespace core
-{
-	template <template <typename ValueType> class TypeSerializer, typename... Ts> struct any_serializer_base
+	template <class Traits, typename... Ts> struct any_serializer_base
 	{
+		using traits		= Traits;
 		using raw_types		= mp::tl::typelist<Ts...>;
 		using decayed_types = mp::fn::transform_t<raw_types, std::decay_t>;
 		using unique_types  = mp::tl::unique_t<decayed_types>;
 		using type_count	= mp::tl::list_size<unique_types>;
-		using type_id_type  = size_t;
-		template <typename V> using type_serializer = TypeSerializer<V>;
 
-		using store_func = void ( * )( const any &_any, OArchive &_ar );
-		using load_func  = void ( * )( any &_any, IArchive &_ar );
-		using type_func  = const type_info &(*)();
+		using store_func = typename traits::store_func_type;
+		using load_func  = typename traits::load_func_type;
+		using type_func  = typename traits::type_func_type;
+		template <class ValueType> using type_serializer  = typename traits::template type_serializer_type<ValueType>;
+		using type_id_type = typename traits::type_id_type;
 
 		template <class L> struct function_mgr;
 		template <template <typename...> class L, typename... Ts> struct function_mgr<L<Ts...>>
@@ -303,39 +193,41 @@ namespace core
 		using functions = function_mgr<unique_types>;
 	};
 
-	template <template <typename ValueType> class TypeSerializer, typename... ValueTypes>
+	template <class Traits, typename... ValueTypes>
 	template <template <typename...> class L, typename... Ts>
-	typename any_serializer_base<TypeSerializer, ValueTypes...>::store_func
-		any_serializer_base<TypeSerializer, ValueTypes...>::function_mgr<L<Ts...>>::store_funcs
-			[ any_serializer_base<TypeSerializer, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
-				any_serializer_base<TypeSerializer, ValueTypes...>::type_serializer<Ts>::store...
+	typename any_serializer_base<Traits, ValueTypes...>::store_func
+		any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::store_funcs
+			[ any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
+				any_serializer_base<Traits, ValueTypes...>::type_serializer<Ts>::store...
 			};
-	template <template <typename ValueType> class TypeSerializer, typename... ValueTypes>
+	template <class Traits, typename... ValueTypes>
 	template <template <typename...> class L, typename... Ts>
-	typename any_serializer_base<TypeSerializer, ValueTypes...>::load_func
-		any_serializer_base<TypeSerializer, ValueTypes...>::function_mgr<L<Ts...>>::load_funcs
-			[ any_serializer_base<TypeSerializer, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
-				any_serializer_base<TypeSerializer, ValueTypes...>::type_serializer<Ts>::load...
+	typename any_serializer_base<Traits, ValueTypes...>::load_func
+		any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::load_funcs
+			[ any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
+				any_serializer_base<Traits, ValueTypes...>::type_serializer<Ts>::load...
 			};
-	template <template <typename ValueType> class TypeSerializer, typename... ValueTypes>
+	template <class Traits, typename... ValueTypes>
 	template <template <typename...> class L, typename... Ts>
-	typename any_serializer_base<TypeSerializer, ValueTypes...>::type_func
-		any_serializer_base<TypeSerializer, ValueTypes...>::function_mgr<L<Ts...>>::type_funcs
-			[ any_serializer_base<TypeSerializer, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
-				any_serializer_base<TypeSerializer, ValueTypes...>::type_serializer<Ts>::type...
+	typename any_serializer_base<Traits, ValueTypes...>::type_func
+		any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_funcs
+			[ any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
+				any_serializer_base<Traits, ValueTypes...>::type_serializer<Ts>::type...
 			};
 
 } // core
 
+
+
 template <typename ValueType> struct type_serializer
 {
-	static void store(const core::any &_any, core::OArchive &_ar)
+	static void store( const core::any &_any, std::ostream &_ar )
 	{
-		_ar << core::any_cast<const ValueType &>(_any);
+		_ar << core::any_cast<const ValueType &>( _any );
 	}
-	static void load(core::any &_any, core::IArchive &_ar)
+	static void load( core::any &_any, std::istream &_ar )
 	{
-		_ar >> core::any_cast<ValueType &>(_any);
+		_ar >> core::any_cast<ValueType &>( _any );
 	}
 	static const core::type_info &type()
 	{
@@ -343,43 +235,47 @@ template <typename ValueType> struct type_serializer
 	}
 };
 
-struct any_serializer
-	: public core::any_serializer_base<type_serializer, i8, u8, i16, u16, i32, u32, i64, u64, f32, f64, std::string>
+struct serializer_traits
 {
+	template <typename ValueType> using type_serializer_type = type_serializer<ValueType>;
+	using store_func_type = void ( * )( const core::any &_any, std::ostream &_ar );
+	using load_func_type  = void ( * )( core::any &_any, std::istream &_ar );
+	using type_func_type  = const core::type_info &(*)();
+	using type_id_type	= size_t;
 };
 
-any_serializer as;
-
-// any_serializer::store_funcs[ 0 ]
-
-void any_store( const core::any &_any, core::OArchive &_ar )
+struct any_serializer : public core::any_serializer_base<serializer_traits, i8, u8, i16, u16, i32, u32,
+														 i64, u64, f32, f64, std::string>
 {
-	// linear search
-	for ( any_serializer::type_id_type type_id = 0;
-		  static_cast<any_serializer::type_id_type>( any_serializer::type_count::value ) > type_id;
-		  ++type_id )
+	static void store( const core::any &_any, std::ostream &_ar )
 	{
-		if ( any_serializer::functions::type_funcs[ type_id ]() == _any.type() )
+		// linear search
+		for ( any_serializer::type_id_type type_id = 0;
+			  static_cast<any_serializer::type_id_type>( any_serializer::type_count::value ) > type_id;
+			  ++type_id )
 		{
-			_ar << type_id;
-			any_serializer::functions::store_funcs[ type_id ]( _any, _ar );
+			if ( any_serializer::functions::type_funcs[ type_id ]() == _any.type() )
+			{
+				_ar << type_id;
+				any_serializer::functions::store_funcs[ type_id ]( _any, _ar );
+				return;
+			}
+		}
+		// CORE_RAISE( );
+	}
+
+	static void load( core::any &_any, std::istream &_ar )
+	{
+		any_serializer::type_id_type type_id;
+		_ar >> type_id;
+		if ( any_serializer::type_count::value > type_id )
+		{
+			any_serializer::functions::load_funcs[ type_id ]( _any, _ar );
 			return;
 		}
+		// CORE_RAISE( );
 	}
-	// CORE_RAISE( );
-}
-
-void any_load( core::any &_any, core::IArchive &_ar )
-{
-	any_serializer::type_id_type type_id;
-	_ar >> type_id;
-	if ( any_serializer::type_count::value > type_id )
-	{
-		any_serializer::functions::load_funcs[ type_id ]( _any, _ar );
-		return;
-	}
-	// CORE_RAISE( );
-}
+};
 
 int main()
 {
@@ -415,7 +311,7 @@ int main()
 
 	std::cout << "lalala\n";
 
-	any_store( x, std::cout );
+	any_serializer::store( x, std::cout );
 
 	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
 	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );
