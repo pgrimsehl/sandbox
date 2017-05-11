@@ -168,56 +168,59 @@ namespace core
 {
 	template <class Traits, typename... Ts> struct any_serializer_base
 	{
-		using traits		= Traits;
+		// local redefinition of trait types
+		using traits_type	 = Traits;
+		using store_func_type = typename traits_type::store_func_type;
+		using load_func_type  = typename traits_type::load_func_type;
+		using type_func_type  = typename traits_type::type_func_type;
+		template <class ValueType>
+		using type_serializer_type = typename traits_type::template type_serializer_type<ValueType>;
+		using type_id_type		   = typename traits_type::type_id_type;
+
+		// transform the supplied value types and make each type unique
 		using raw_types		= mp::tl::typelist<Ts...>;
 		using decayed_types = mp::fn::transform_t<raw_types, std::decay_t>;
 		using unique_types  = mp::tl::unique_t<decayed_types>;
 		using type_count	= mp::tl::list_size<unique_types>;
 
-		using store_func = typename traits::store_func_type;
-		using load_func  = typename traits::load_func_type;
-		using type_func  = typename traits::type_func_type;
-		template <class ValueType> using type_serializer  = typename traits::template type_serializer_type<ValueType>;
-		using type_id_type = typename traits::type_id_type;
-
-		template <class L> struct function_mgr;
-		template <template <typename...> class L, typename... Ts> struct function_mgr<L<Ts...>>
+		// this wrapper class is used to have access to the types in unique_types
+		template <class L> struct func_wrapper;
+		template <template <typename...> class L, typename... Ts> struct func_wrapper<L<Ts...>>
 		{
-			constexpr function_mgr() = default;
-			using type_count		 = mp::tl::list_size<L<Ts...>>;
-			static store_func store_funcs[ type_count::value ];
-			static load_func  load_funcs[ type_count::value ];
-			static type_func  type_funcs[ type_count::value ];
+			constexpr func_wrapper()			 = delete;
+			func_wrapper( const func_wrapper & ) = delete;
+			func_wrapper( func_wrapper && )		 = delete;
+			static store_func_type store_funcs[ type_count::value ];
+			static load_func_type  load_funcs[ type_count::value ];
+			static type_func_type  type_funcs[ type_count::value ];
 		};
 
-		using functions = function_mgr<unique_types>;
+		using functions = func_wrapper<unique_types>;
 	};
 
 	template <class Traits, typename... ValueTypes>
 	template <template <typename...> class L, typename... Ts>
-	typename any_serializer_base<Traits, ValueTypes...>::store_func
-		any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::store_funcs
-			[ any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
-				any_serializer_base<Traits, ValueTypes...>::type_serializer<Ts>::store...
-			};
+	typename any_serializer_base<Traits, ValueTypes...>::store_func_type
+		any_serializer_base<Traits, ValueTypes...>::func_wrapper<
+			L<Ts...>>::store_funcs[ any_serializer_base<Traits, ValueTypes...>::type_count::value ] = {
+			any_serializer_base<Traits, ValueTypes...>::type_serializer_type<Ts>::store...
+		};
 	template <class Traits, typename... ValueTypes>
 	template <template <typename...> class L, typename... Ts>
-	typename any_serializer_base<Traits, ValueTypes...>::load_func
-		any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::load_funcs
-			[ any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
-				any_serializer_base<Traits, ValueTypes...>::type_serializer<Ts>::load...
-			};
+	typename any_serializer_base<Traits, ValueTypes...>::load_func_type
+		any_serializer_base<Traits, ValueTypes...>::func_wrapper<
+			L<Ts...>>::load_funcs[ any_serializer_base<Traits, ValueTypes...>::type_count::value ] = {
+			any_serializer_base<Traits, ValueTypes...>::type_serializer_type<Ts>::load...
+		};
 	template <class Traits, typename... ValueTypes>
 	template <template <typename...> class L, typename... Ts>
-	typename any_serializer_base<Traits, ValueTypes...>::type_func
-		any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_funcs
-			[ any_serializer_base<Traits, ValueTypes...>::function_mgr<L<Ts...>>::type_count::value ] = {
-				any_serializer_base<Traits, ValueTypes...>::type_serializer<Ts>::type...
-			};
+	typename any_serializer_base<Traits, ValueTypes...>::type_func_type
+		any_serializer_base<Traits, ValueTypes...>::func_wrapper<
+			L<Ts...>>::type_funcs[ any_serializer_base<Traits, ValueTypes...>::type_count::value ] = {
+			any_serializer_base<Traits, ValueTypes...>::type_serializer_type<Ts>::type...
+		};
 
 } // core
-
-
 
 template <typename ValueType> struct type_serializer
 {
