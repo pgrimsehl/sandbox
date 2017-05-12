@@ -33,5 +33,11 @@
     <ClInclude Include="core.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="utility.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="any_serializer_base.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
