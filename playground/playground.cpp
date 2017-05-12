@@ -16,6 +16,7 @@
 #include <cassert>
 #include <iostream>
 #include <istream>
+#include <limits>
 #include <ostream>
 #include <string>
 #include <tuple>
@@ -166,22 +167,51 @@ std::remove_reference_t<const char &> r5 = r1;
 
 namespace core
 {
+	//	-----------------------------------------------------------------------
+	//	Requirements for the Traits type
+	//	-----------------------------------------------------------------------
+	//	Defines the following types:
+	//		istream_type : type of stream to read from
+	//		ostream_type : type of stream to write to
+	//		type_id_type : integral type to be used as type index
+	//		type_serializer_type : a template class, taking exactly one template type parameter to identify the type
+	//			that is serialized
+	//		type_serializer_type defines the following static member functions:
+	// 
+	//	Defines the following static member functions
+	//		storeTypeId : of type 'void ( * )( type_id_type, ostream_type & )'
+	//		loadTypeId : of type 'type_id_type ( * )( istream_type & )'
+
 	template <class Traits, typename... Ts> struct any_serializer_base
 	{
 		// local redefinition of trait types
-		using traits_type	 = Traits;
-		using store_func_type = typename traits_type::store_func_type;
-		using load_func_type  = typename traits_type::load_func_type;
-		using type_func_type  = typename traits_type::type_func_type;
+		using traits_type  = Traits;
+		using ostream_type = typename traits_type::ostream_type;
+		using istream_type = typename traits_type::istream_type;
 		template <class ValueType>
 		using type_serializer_type = typename traits_type::template type_serializer_type<ValueType>;
 		using type_id_type		   = typename traits_type::type_id_type;
+
+		// required function signatures
+		using store_func_type = void ( * )( const any &, ostream_type & );
+		using load_func_type  = void ( * )( any &, istream_type & );
+		using type_func_type  = const ::core::type_info &(*)();
 
 		// transform the supplied value types and make each type unique
 		using raw_types		= mp::tl::typelist<Ts...>;
 		using decayed_types = mp::fn::transform_t<raw_types, std::decay_t>;
 		using unique_types  = mp::tl::unique_t<decayed_types>;
 		using type_count	= mp::tl::list_size<unique_types>;
+
+		static_assert( std::is_integral<type_id_type>::value, "type_id_type must be an integral type" );
+		static_assert( std::numeric_limits<type_id_type>::max() >= type_count::value,
+					   "type_id_type is too small to index all types" );
+
+		// function template to access the type_info for each type
+		static const core::type_info &type_of()
+		{
+			return core::type_id<ValueType>();
+		}
 
 		// this wrapper class is used to have access to the types in unique_types
 		template <class L> struct func_wrapper;
@@ -197,7 +227,7 @@ namespace core
 
 		using functions = func_wrapper<unique_types>;
 
-		template <typename... Args> static void store( const any &_any, Args &&... _args )
+		static void store( const any &_any, ostream_type &_out )
 		{
 			// linear search
 			for ( type_id_type type_id = 0; static_cast<type_id_type>( type_count::value ) > type_id;
@@ -205,21 +235,20 @@ namespace core
 			{
 				if ( functions::type_funcs[ type_id ]() == _any.type() )
 				{
-					traits_type::storeTypeId( type_id, std::forward<Args>(_args)...);
-					any_serializer::functions::store_funcs[ type_id ]( _any,
-																	   std::forward<Args>( _args )... );
+					traits_type::storeTypeId( type_id, _out );
+					functions::store_funcs[ type_id ]( _any, _out );
 					return;
 				}
 			}
 			// CORE_RAISE();
 		}
 
-		template <typename... Args> static void load( any &_any, Args &&... _args )
+		static void load( any &_any, istream_type &_in )
 		{
-			type_id_type type_id = traits_type::loadTypeId( std::forward<Args>(_args)...);
+			type_id_type type_id = traits_type::loadTypeId( _in );
 			if ( any_serializer::type_count::value > type_id )
 			{
-				functions::load_funcs[ type_id ]( _any, std::forward<Args>( _args )... );
+				functions::load_funcs[ type_id ]( _any, _in );
 				return;
 			}
 			// CORE_RAISE( );
@@ -252,15 +281,19 @@ namespace core
 
 struct serializer_traits
 {
+	using ostream_type = std::ostream;
+	using istream_type = std::istream;
+	using type_id_type = u8;
+
 	template <typename ValueType> struct type_serializer_type
 	{
-		static void store(const core::any &_any, std::ostream &_ar)
+		static void store( const core::any &_any, ostream_type &_out )
 		{
-			_ar << core::any_cast<const ValueType &>(_any);
+			_out << core::any_cast<const ValueType &>( _any );
 		}
-		static void load(core::any &_any, std::istream &_ar)
+		static void load( core::any &_any, istream_type &_in )
 		{
-			_ar >> core::any_cast<ValueType &>(_any);
+			_in >> core::any_cast<ValueType &>( _any );
 		}
 		static const core::type_info &type()
 		{
@@ -268,55 +301,22 @@ struct serializer_traits
 		}
 	};
 
-	using store_func_type = void ( * )( const core::any &_any, std::ostream &_ar );
-	using load_func_type  = void ( * )( core::any &_any, std::istream &_ar );
-	using type_func_type  = const core::type_info &(*)();
-	using type_id_type	= size_t;
-
-	static type_id_type loadTypeId( std::istream &_ar )
+	static type_id_type loadTypeId( istream_type &_in )
 	{
 		type_id_type type_id;
-		_ar >> type_id;
+		_in >> type_id;
 		return type_id;
 	}
 
-	static void storeTypeId(type_id_type _type_id, std::ostream &_ar)
+	static void storeTypeId( type_id_type _type_id, ostream_type &_out )
 	{
-		_ar << _type_id;
+		_out << _type_id;
 	}
 };
 
 struct any_serializer : public core::any_serializer_base<serializer_traits, i8, u8, i16, u16, i32, u32,
 														 i64, u64, f32, f64, std::string>
 {
-	// static void store( const core::any &_any, std::ostream &_ar )
-	//{
-	//	// linear search
-	//	for ( any_serializer::type_id_type type_id = 0;
-	//		  static_cast<any_serializer::type_id_type>( any_serializer::type_count::value ) > type_id;
-	//		  ++type_id )
-	//	{
-	//		if ( any_serializer::functions::type_funcs[ type_id ]() == _any.type() )
-	//		{
-	//			_ar << type_id;
-	//			any_serializer::functions::store_funcs[ type_id ]( _any, _ar );
-	//			return;
-	//		}
-	//	}
-	//	// CORE_RAISE( );
-	//}
-
-	// static void load( core::any &_any, std::istream &_ar )
-	//{
-	//	any_serializer::type_id_type type_id;
-	//	_ar >> type_id;
-	//	if ( any_serializer::type_count::value > type_id )
-	//	{
-	//		any_serializer::functions::load_funcs[ type_id ]( _any, _ar );
-	//		return;
-	//	}
-	//	// CORE_RAISE( );
-	//}
 };
 
 int main()
@@ -355,7 +355,7 @@ int main()
 
 	any_serializer::store( x, std::cout );
 	any_serializer::load( x, std::cin );
-	std::cout << any_cast<const std::string&>(x);
+	std::cout << any_cast<const std::string &>( x );
 
 	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
 	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );
