@@ -176,12 +176,14 @@ namespace core
 	//		type_id_type : integral type to be used as type index
 	//		type_serializer_type : a template class, taking exactly one template type parameter to identify the type
 	//			that is serialized
-	//		type_serializer_type defines the following static member functions:
-	// 
-	//	Defines the following static member functions
-	//		storeTypeId : of type 'void ( * )( type_id_type, ostream_type & )'
-	//		loadTypeId : of type 'type_id_type ( * )( istream_type & )'
-
+	//			type_serializer_type defines the following static member functions:
+	//				void store(const core::any &_any, ostream_type &_out)
+	//				void load(core::any &_any, istream_type &_in)
+	//			_any is guaranteed to match _any.type() == core::type_id<ValueType>() when these functions are invoked
+	//	Defines the following static member functions:
+	//		void storeTypeId( type_id_type, ostream_type & )
+	//		type_id_type loadTypeId( istream_type & )
+	//	-----------------------------------------------------------------------
 	template <class Traits, typename... Ts> struct any_serializer_base
 	{
 		// local redefinition of trait types
@@ -191,11 +193,6 @@ namespace core
 		template <class ValueType>
 		using type_serializer_type = typename traits_type::template type_serializer_type<ValueType>;
 		using type_id_type		   = typename traits_type::type_id_type;
-
-		// required function signatures
-		using store_func_type = void ( * )( const any &, ostream_type & );
-		using load_func_type  = void ( * )( any &, istream_type & );
-		using type_func_type  = const ::core::type_info &(*)();
 
 		// transform the supplied value types and make each type unique
 		using raw_types		= mp::tl::typelist<Ts...>;
@@ -208,10 +205,16 @@ namespace core
 					   "type_id_type is too small to index all types" );
 
 		// function template to access the type_info for each type
+		template <typename ValueType>
 		static const core::type_info &type_of()
 		{
 			return core::type_id<ValueType>();
 		}
+
+		// required function signatures
+		using store_func_type = void(*)(const any &, ostream_type &);
+		using load_func_type = void(*)(any &, istream_type &);
+		using type_func_type = const ::core::type_info &(*)();
 
 		// this wrapper class is used to have access to the types in unique_types
 		template <class L> struct func_wrapper;
@@ -246,7 +249,7 @@ namespace core
 		static void load( any &_any, istream_type &_in )
 		{
 			type_id_type type_id = traits_type::loadTypeId( _in );
-			if ( any_serializer::type_count::value > type_id )
+			if ( type_count::value > type_id )
 			{
 				functions::load_funcs[ type_id ]( _any, _in );
 				return;
@@ -274,7 +277,7 @@ namespace core
 	typename any_serializer_base<Traits, ValueTypes...>::type_func_type
 		any_serializer_base<Traits, ValueTypes...>::func_wrapper<
 			L<Ts...>>::type_funcs[ any_serializer_base<Traits, ValueTypes...>::type_count::value ] = {
-			any_serializer_base<Traits, ValueTypes...>::type_serializer_type<Ts>::type...
+			&any_serializer_base<Traits, ValueTypes...>::type_of<Ts>...
 		};
 
 } // core
@@ -283,7 +286,7 @@ struct serializer_traits
 {
 	using ostream_type = std::ostream;
 	using istream_type = std::istream;
-	using type_id_type = u8;
+	using type_id_type = size_t;
 
 	template <typename ValueType> struct type_serializer_type
 	{
@@ -294,10 +297,6 @@ struct serializer_traits
 		static void load( core::any &_any, istream_type &_in )
 		{
 			_in >> core::any_cast<ValueType &>( _any );
-		}
-		static const core::type_info &type()
-		{
-			return core::type_id<ValueType>();
 		}
 	};
 
