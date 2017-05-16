@@ -5,7 +5,7 @@
 
 #include <type_traits> // std::aligned_union
 
-// partial implementation of std::any for C++11
+// Implementation of std::any for C++11
 // (See http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/n4618.pdf, 20.8 Storage for any type,
 // for specification)
 // using std::enable_if for SFINAE (for example, see http://en.cppreference.com/w/cpp/language/sfinae
