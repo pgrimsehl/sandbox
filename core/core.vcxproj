@@ -187,6 +187,7 @@
     <ClInclude Include="udl.h" />
     <ClInclude Include="udl_crc32.h" />
     <ClInclude Include="utility.h" />
+    <ClInclude Include="variant.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

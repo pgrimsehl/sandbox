@@ -21,16 +21,8 @@
     <ClInclude Include="typelist.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="variant.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="thing.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="variant.inl">
-      <Filter>Headerdateien</Filter>
-    </None>
   </ItemGroup>
 </Project>

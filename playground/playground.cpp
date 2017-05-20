@@ -5,12 +5,12 @@
 
 #include <mp/function.h>
 #include <mp/thing.h>
-#include <mp/variant.h>
 
 #include <core/any.h>
 #include <core/any_serializer_base.h>
 #include <core/type_info.h>
 #include <core/udl.h>
+#include <core/variant.h>
 
 #include <test_lib/any_user.h>
 
@@ -60,7 +60,7 @@ void call_void( ... )
 {
 }
 
-using MyVariant = mp::variant<i32, u32, bool, std::string>;
+//using MyVariant = mp::variant<i32, u32, bool, std::string>;
 
 // std::is_copy_constructible<MyVariant>;
 
@@ -273,18 +273,6 @@ int main()
 	mp::fn::strip_t<const char *const> k;
 	call_void( c );
 	call_void( d );
-
-	MyVariant v0( 25ul );
-	v0 = std::string( "lala" );
-	v0.emplace<std::string>( "lala" );
-	// For C++11
-	// (http://stackoverflow.com/questions/13002368/template-constructor-in-a-class-template-how-to-explicitly-specify-template-ar)
-	// You cannot use T for the class template parameter and the constructor template parameter. But, to
-	// answer your question, from[14.5.2p5] : Because the explicit template argument list follows the
-	// function template name, and because conversion member function templates and constructor member
-	// function templates are called without using a function name, there is no way to provide an
-	// explicit template argument list for these function templates. In C++17 std::in_place_type_t<T> is
-	// used for these constructors MyVariant v1<std::string, const char*>("dumdidum");
 
 	const core::type_info &u32_id	 = core::type_id<u32>();
 	const core::type_info &u32_ptr_id = core::type_id<u32 *>();
