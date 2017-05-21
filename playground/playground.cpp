@@ -60,7 +60,7 @@ void call_void( ... )
 {
 }
 
-//using MyVariant = mp::variant<i32, u32, bool, std::string>;
+// using MyVariant = mp::variant<i32, u32, bool, std::string>;
 
 // std::is_copy_constructible<MyVariant>;
 
@@ -234,11 +234,11 @@ int main()
 	x.emplace<std::string>( std::string{ "works!" } );
 	x.emplace<std::string>( "works!" );
 
-	std::cout << "lalala\n";
+	//std::cout << "lalala\n";
 
-	any_serializer::store( x, std::cout );
-	any_serializer::load( x, std::cin );
-	std::cout << any_cast<const std::string &>( x );
+	//any_serializer::store( x, std::cout );
+	//any_serializer::load( x, std::cin );
+	//std::cout << any_cast<const std::string &>( x );
 
 	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
 	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );

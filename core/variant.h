@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace core
 {
 	/*
@@ -120,11 +122,13 @@ namespace core
 		template <class Alloc, class T, class... Args>
 		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, Args &&... );
 		template <class Alloc, class T, class U, class... Args>
-		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, std::initializer_list<U>, Args &&... );
+		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, std::initializer_list<U>,
+				 Args &&... );
 		template <class Alloc, size_t I, class... Args>
 		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, Args &&... );
 		template <class Alloc, size_t I, class U, class... Args>
-		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, std::initializer_list<U>, Args &&... );
+		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, std::initializer_list<U>,
+				 Args &&... );
 
 		// 20.7.2.2, destructor
 		~variant();
@@ -135,10 +139,11 @@ namespace core
 		template <class T> variant &operator=( T && ) noexcept( see below );
 
 		// 20.7.2.4, modifiers
-		template <class T, class... Args> void			 emplace( Args &&... );
-		template <class T, class U, class... Args> void  emplace( std::initializer_list<U>, Args &&... );
-		template <size_t I, class... Args> void			 emplace( Args &&... );
-		template <size_t I, class U, class... Args> void emplace( std::initializer_list<U>, Args &&... );
+		template <class T, class... Args> void			emplace( Args &&... );
+		template <class T, class U, class... Args> void emplace( std::initializer_list<U>, Args &&... );
+		template <size_t I, class... Args> void			emplace( Args &&... );
+		template <size_t I, class U, class... Args>
+		void emplace( std::initializer_list<U>, Args &&... );
 
 		// 20.7.2.5, value status
 		constexpr bool   valueless_by_exception() const noexcept;
@@ -146,5 +151,81 @@ namespace core
 
 		// 20.7.2.6, swap
 		void swap( variant & ) noexcept( see below );
+
+	private:
+		// storage for in-place construction of all types in Types
+		using storage_type = std::aligned_union<8, Types...>;
+
+		// method table to handle a value of type ValueType, without knowledge about the type
+		template <class ValueType> struct vtable_type
+		{
+			// construct a new object using ValueType's copy constructor
+			static void copy_construct( storage_type &_dst, const storage_type &_src )
+			{
+				new ( &_dst ) ValueType( reinterpret_cast<const ValueType &>( _src ) );
+			}
+			// construct a new object using ValueType's move constructor
+			static void move_construct( storage_type &_dst, storage_type &_src )
+			{
+				new ( &_dst ) ValueType( std::move( reinterpret_cast<ValueType &>( _src ) ) );
+				destroy( _src );
+			}
+			// exchange values using std::swap
+			static void swap( storage_type &_dst, storage_type &_src )
+			{
+				std::swap( reinterpret_cast<ValueType &>( _dst ),
+						   reinterpret_cast<ValueType &>( _src ) );
+			}
+			// explicit call to ValueType's destructor
+			static void destroy( storage_type &_dst )
+			{
+				reinterpret_cast<ValueType &>( _dst ).~ValueType();
+			}
+		};
+
+		// construction of type ValueType
+		template <typename ValueTypeT> struct constructor_type
+		{
+			// constructor overload
+			template <class... Args> static void construct( storage_type &_storage, Args &&... _args )
+			{
+				new ( &_storage ) ValueType( std::forward<Args>( _args )... );
+			}
+
+			// constructor using initializer list
+			template <class U, class... Args>
+			static void construct_il( storage_type &_storage, std::initializer_list<U> _il,
+									  Args &&... _args )
+			{
+				new ( &_storage ) ValueType( _il, std::forward<Args>( _args )... );
+			}
+		};
+
+		// casting of type ValueType
+		template <class ValueType> struct cast_type
+		{
+			static ValueType *cast( storage_type &_storage )
+			{
+				return reinterpret_cast<ValueType *>( &_storage );
+			}
+			static const ValueType *cast( const storage_type &_storage )
+			{
+				return reinterpret_cast<const ValueType *>( &_storage );
+			}
+		};
+
+		// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
+		template <typename T, typename Ti> struct FUN_Ti
+		{
+		private:
+			static T &&			   makeT();
+			static std::true_type  FUN( Ti );
+			static std::false_type FUN( ... );
+
+		public:
+			using type = std::integral_constant<
+				bool,
+				std::is_same<std::true_type, decltype( FUN( std::forward<T>( makeT() ) ) )>::value>;
+		};
 	};
 }
