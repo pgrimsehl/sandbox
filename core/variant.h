@@ -215,6 +215,8 @@ namespace core
 		};
 
 		// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
+		// T_j is selected when FUN( std::forward<T>(t) ) is well-formed
+		// std::forward returns an rvalue reference T&&, so does makeT()
 		template <typename T, typename Ti> struct FUN_Ti
 		{
 		private:
@@ -223,9 +225,47 @@ namespace core
 			static std::false_type FUN( ... );
 
 		public:
+			using type =
+				std::integral_constant<bool,
+									   std::is_same<std::true_type, decltype( FUN( makeT() ) )>::value>;
+		};
+
+		// NOTE: does not work for templates with non-type template parameters
+		template <typename T, template <typename...> class U> struct specialization_helper
+		{
+		private:
+			static typename std::decay<T>::type				makeT();
+			template <typename... Ps> static std::true_type test( U<Ps...> );
+			static std::false_type							test( ... );
+
+		public:
 			using type = std::integral_constant<
-				bool,
-				std::is_same<std::true_type, decltype( FUN( std::forward<T>( makeT() ) ) )>::value>;
+				bool, std::is_same<std::true_type, decltype( test( makeT() ) )>::value>;
+		};
+
+		// test for template specialization
+		template <typename T, template <typename...> class U>
+		struct is_specialization
+			: public std::integral_constant<bool, specialization_helper<T, U>::type::value>
+		{
+		};
+
+		// helper class to evaluate T_j for overload resolution (N4618 20.7.2.1 - 16)
+		template <typename T, typename Ti> struct evaluate_Ti_helper
+		{
+			using decay_T	 = typename std::decay<T>::type;
+			using FUN_Ti_type = typename FUN_Ti<T, Ti>::type;
+			using type =
+				std::integral_constant<bool, FUN_Ti_type::value &&
+												 !std::is_same<decay_T, variant>::value &&
+												 std::is_constructible<Ti, T>::value &&
+				!is_specialization<decay_T, in_place_type_t>::value>;// &&
+				//!is_specialization<decay_T, in_place_index_t>::value>;
+		};
+
+		// test Ti for overload resolution
+		template <typename T, typename Ti> struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
+		{
 		};
 	};
 }
