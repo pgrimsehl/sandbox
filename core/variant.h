@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utility.h" // in_place_type_t, in_place_index_t
 #include <type_traits>
 
 namespace core
@@ -230,23 +231,22 @@ namespace core
 									   std::is_same<std::true_type, decltype( FUN( makeT() ) )>::value>;
 		};
 
-		// NOTE: does not work for templates with non-type template parameters
-		template <typename T, template <typename...> class U> struct specialization_helper
+		// helper struct for detection of specialization of in_place_type_t
+		template <typename T> struct is_specialization_of_in_place_type : public std::false_type
 		{
-		private:
-			static typename std::decay<T>::type				makeT();
-			template <typename... Ps> static std::true_type test( U<Ps...> );
-			static std::false_type							test( ... );
-
-		public:
-			using type = std::integral_constant<
-				bool, std::is_same<std::true_type, decltype( test( makeT() ) )>::value>;
+		};
+		template <typename T>
+		struct is_specialization_of_in_place_type<in_place_type_t<T>> : public std::true_type
+		{
 		};
 
-		// test for template specialization
-		template <typename T, template <typename...> class U>
-		struct is_specialization
-			: public std::integral_constant<bool, specialization_helper<T, U>::type::value>
+		// helper struct for detection of specialization of in_place_index_t
+		template <typename T> struct is_specialization_of_in_place_index : public std::false_type
+		{
+		};
+
+		template <size_t I>
+		struct is_specialization_of_in_place_index<in_place_index_t<I>> : public std::true_type
 		{
 		};
 
@@ -259,13 +259,29 @@ namespace core
 				std::integral_constant<bool, FUN_Ti_type::value &&
 												 !std::is_same<decay_T, variant>::value &&
 												 std::is_constructible<Ti, T>::value &&
-				!is_specialization<decay_T, in_place_type_t>::value>;// &&
-				//!is_specialization<decay_T, in_place_index_t>::value>;
+												 !is_specialization_of_in_place_type<decay_T>::value &&
+												 !is_specialization_of_in_place_index<decay_T>::value>;
 		};
 
 		// test Ti for overload resolution
-		template <typename T, typename Ti> struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
+		template <typename T, typename Ti>
+		struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
 		{
 		};
+
+		// helper class to select Tj from all Tis 
+		template <typename T, typename ...Ts> struct select_Tj;
+
+		//template <typename T> struct select_Tj<T>
+		//{
+		//	using type = void;
+		//};
+
+		//template <typename T, typename Ti, typename ...Ts> struct select_Tj< T, Ti, Ts...>
+		//{
+		//	using type = typename std::conditional< evaluate_Ti<T, Ti>::value,
+		//		! std::disjunction<evaluate_Ti<T, Ts>...>::type::value
+		//};
+
 	};
 }

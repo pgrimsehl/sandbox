@@ -203,36 +203,9 @@ struct any_serializer : public core::any_serializer_base<serializer_traits, i8, 
 };
 
 
-// helper class to test for template specialization
-template <typename T, template <typename...> class U> struct is_specialization_helper
-{
-private:
-	static typename std::decay<T>::type				makeT();
-	template <typename... Ps> static std::true_type test( U<Ps...> );
-	static std::false_type							test( ... );
-
-public:
-	using type = std::integral_constant<
-		bool, std::is_same<std::true_type, decltype( test( makeT() ) )>::value>;
-};
-
-template <typename T, template <typename...> class U>
-struct is_specialization
-	: public std::integral_constant<bool, is_specialization_helper<T, U>::type::value>
-{
-};
-
-
 int main()
 {
 	using namespace core;
-
-	using vec_type = std::vector<int>;
-	using inp_type = core::in_place_type_t<A>;
-
-	bool test_specialization = is_specialization<vec_type, std::vector>::value;
-	test_specialization = is_specialization<inp_type, std::vector>::value;
-	test_specialization = is_specialization<inp_type, core::in_place_type_t>::value;
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value
