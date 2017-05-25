@@ -6,6 +6,8 @@
 namespace core
 {
 
+	constexpr size_t variant_npos = -1;
+
 	// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
 	// T_j is selected when FUN( std::forward<T>(t) ) is well-formed
 	// std::forward returns an rvalue reference T&&, so does makeT()
@@ -170,7 +172,6 @@ namespace core
 	// N4618 20.7.2 class template variant
 	template <class... Types> class variant
 	{
-
 		// storage for in-place construction of all types in Types
 		using storage_type = std::aligned_union<8, Types...>;
 
@@ -232,14 +233,24 @@ namespace core
 			}
 		};
 
+		static_assert( 0 < sizeof...( Types ),
+					   "Template parameter list for variant must not be empty" );
+
+		using T0 = typename std::tuple_element<0, std::tuple<Types...>>::type;
+
+		storage_type m_Storage;
+		size_t		 m_Variant = variant_npos;
+
 	public:
 		// --------------------------------------------------------------------------
 		// 20.7.2.1, constructors
 		// --------------------------------------------------------------------------
 
 		// --------------------------------------------------------------------------
-		constexpr variant() noexcept //( see below )
+		template <typename = std::enable_if<std::is_nothrow_default_constructible<T0>::value>::type>
+		constexpr variant() CORE_NOTHROW_IF( ( std::is_nothrow_default_constructible_v<T0>::value ) )
 		{
+			new (static_cast<void*>(&m_Storage)) T0();
 		}
 
 		// --------------------------------------------------------------------------
@@ -254,9 +265,10 @@ namespace core
 
 		// --------------------------------------------------------------------------
 		template <class T, typename selector = typename select_Tj<T, Types...>,
-				  typename = std::enable_if<!std::is_same<typename selector::type, void>::value, typename selector::type>::type>
-		constexpr variant( T &&_value ) CORE_NOTHROW_IF( (
-			std::is_nothrow_constructible<typename selector::type, T>::value ) )
+				  typename = std::enable_if<!std::is_same<typename selector::type, void>::value,
+											typename selector::type>::type>
+		constexpr variant( T &&_value )
+			CORE_NOTHROW_IF( ( std::is_nothrow_constructible<typename selector::type, T>::value ) )
 		{
 		}
 

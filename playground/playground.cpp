@@ -224,7 +224,9 @@ int main()
 {
 	using namespace core;
 
-	core::variant<int, std::string> v0( 1 );
+	using my_variant = core::variant<int, std::string>;
+	my_variant v0( 1 );
+	my_variant v1;
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value
