@@ -5,6 +5,75 @@
 
 namespace core
 {
+
+	// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
+	// T_j is selected when FUN( std::forward<T>(t) ) is well-formed
+	// std::forward returns an rvalue reference T&&, so does makeT()
+	template <typename T, typename Ti> struct FUN_Ti
+	{
+	private:
+		static T &&			   makeT();
+		static std::true_type  FUN( Ti );
+		static std::false_type FUN( ... );
+
+	public:
+		using type =
+			std::integral_constant<bool,
+								   std::is_same<std::true_type, decltype( FUN( makeT() ) )>::value>;
+	};
+
+	// helper struct for detection of specialization of in_place_type_t
+	template <typename T> struct is_specialization_of_in_place_type : public std::false_type
+	{
+	};
+	template <typename T>
+	struct is_specialization_of_in_place_type<in_place_type_t<T>> : public std::true_type
+	{
+	};
+
+	// helper struct for detection of specialization of in_place_index_t
+	template <typename T> struct is_specialization_of_in_place_index : public std::false_type
+	{
+	};
+
+	template <size_t I>
+	struct is_specialization_of_in_place_index<in_place_index_t<I>> : public std::true_type
+	{
+	};
+
+	// helper class to evaluate T_j for overload resolution (N4618 20.7.2.1 - 16)
+	template <typename T, typename Ti> struct evaluate_Ti_helper
+	{
+		using decay_T	 = typename std::decay<T>::type;
+		using FUN_Ti_type = typename FUN_Ti<T, Ti>::type;
+		using type =
+			std::integral_constant<bool, FUN_Ti_type::value &&
+											 //! std::is_same<decay_T, variant>::value &&
+											 std::is_constructible<Ti, T>::value &&
+											 !is_specialization_of_in_place_type<decay_T>::value &&
+											 !is_specialization_of_in_place_index<decay_T>::value>;
+	};
+
+	// test Ti for overload resolution
+	template <typename T, typename Ti>
+	struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
+	{
+	};
+
+	// helper class to select Tj from all Tis
+	template <typename T, typename... Ts> struct select_Tj;
+	template <typename T, typename Ti> struct select_Tj<T, Ti>
+	{
+		using type = typename std::conditional<evaluate_Ti<T, Ti>::value, Ti, void>::type;
+	};
+	template <typename T, typename Ti, typename... Ts> struct select_Tj<T, Ti, Ts...>
+	{
+		using type = typename std::conditional<
+			evaluate_Ti<T, Ti>::value,
+			typename std::conditional<!std::disjunction<evaluate_Ti<T, Ts>...>::value, Ti, void>::type,
+			typename select_Tj<T, Ts...>::type>::type;
+	};
+
 	/*
 	N4618 20.7
 	Header <variant> synopsis
@@ -101,59 +170,7 @@ namespace core
 	// N4618 20.7.2 class template variant
 	template <class... Types> class variant
 	{
-	public:
-		// 20.7.2.1, constructors
-		constexpr variant() noexcept( see below );
-		variant( const variant & );
-		variant( variant && ) noexcept( see below );
-		template <class T> constexpr variant( T && ) noexcept( see below );
-		template <class T, class... Args> constexpr explicit variant( in_place_type_t<T>, Args &&... );
-		template <class T, class U, class... Args>
-		constexpr explicit variant( in_place_type_t<T>, std::initializer_list<U>, Args &&... );
-		template <size_t I, class... Args>
-		constexpr explicit variant( in_place_index_t<I>, Args &&... );
-		template <size_t I, class U, class... Args>
-		constexpr explicit variant( in_place_index_t<I>, std::initializer_list<U>, Args &&... );
 
-		// allocator-extended constructors
-		template <class Alloc> variant( std::allocator_arg_t, const Alloc & );
-		template <class Alloc> variant( std::allocator_arg_t, const Alloc &, const variant & );
-		template <class Alloc> variant( std::allocator_arg_t, const Alloc &, variant && );
-		template <class Alloc, class T> variant( std::allocator_arg_t, const Alloc &, T && );
-		template <class Alloc, class T, class... Args>
-		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, Args &&... );
-		template <class Alloc, class T, class U, class... Args>
-		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, std::initializer_list<U>,
-				 Args &&... );
-		template <class Alloc, size_t I, class... Args>
-		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, Args &&... );
-		template <class Alloc, size_t I, class U, class... Args>
-		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, std::initializer_list<U>,
-				 Args &&... );
-
-		// 20.7.2.2, destructor
-		~variant();
-
-		// 20.7.2.3, assignment
-		variant &					operator=( const variant & );
-		variant &					operator=( variant && ) noexcept( see below );
-		template <class T> variant &operator=( T && ) noexcept( see below );
-
-		// 20.7.2.4, modifiers
-		template <class T, class... Args> void			emplace( Args &&... );
-		template <class T, class U, class... Args> void emplace( std::initializer_list<U>, Args &&... );
-		template <size_t I, class... Args> void			emplace( Args &&... );
-		template <size_t I, class U, class... Args>
-		void emplace( std::initializer_list<U>, Args &&... );
-
-		// 20.7.2.5, value status
-		constexpr bool   valueless_by_exception() const noexcept;
-		constexpr size_t index() const noexcept;
-
-		// 20.7.2.6, swap
-		void swap( variant & ) noexcept( see below );
-
-	private:
 		// storage for in-place construction of all types in Types
 		using storage_type = std::aligned_union<8, Types...>;
 
@@ -215,73 +232,100 @@ namespace core
 			}
 		};
 
-		// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
-		// T_j is selected when FUN( std::forward<T>(t) ) is well-formed
-		// std::forward returns an rvalue reference T&&, so does makeT()
-		template <typename T, typename Ti> struct FUN_Ti
+	public:
+		// --------------------------------------------------------------------------
+		// 20.7.2.1, constructors
+		// --------------------------------------------------------------------------
+
+		// --------------------------------------------------------------------------
+		constexpr variant() noexcept //( see below )
 		{
-		private:
-			static T &&			   makeT();
-			static std::true_type  FUN( Ti );
-			static std::false_type FUN( ... );
+		}
 
-		public:
-			using type =
-				std::integral_constant<bool,
-									   std::is_same<std::true_type, decltype( FUN( makeT() ) )>::value>;
-		};
-
-		// helper struct for detection of specialization of in_place_type_t
-		template <typename T> struct is_specialization_of_in_place_type : public std::false_type
+		// --------------------------------------------------------------------------
+		variant( const variant &_rhs )
 		{
-		};
-		template <typename T>
-		struct is_specialization_of_in_place_type<in_place_type_t<T>> : public std::true_type
+		}
+
+		// --------------------------------------------------------------------------
+		variant( variant &&_rhs ) noexcept //( see below )
 		{
-		};
+		}
 
-		// helper struct for detection of specialization of in_place_index_t
-		template <typename T> struct is_specialization_of_in_place_index : public std::false_type
+		// --------------------------------------------------------------------------
+		template <class T, typename selector = typename select_Tj<T, Types...>,
+				  typename = std::enable_if<!std::is_same<typename selector::type, void>::value, typename selector::type>::type>
+		constexpr variant( T &&_value ) CORE_NOTHROW_IF( (
+			std::is_nothrow_constructible<typename selector::type, T>::value ) )
 		{
-		};
+		}
 
-		template <size_t I>
-		struct is_specialization_of_in_place_index<in_place_index_t<I>> : public std::true_type
+		// --------------------------------------------------------------------------
+		template <class T, class... Args> constexpr explicit variant( in_place_type_t<T>, Args &&... );
+
+		// --------------------------------------------------------------------------
+		template <class T, class U, class... Args>
+		constexpr explicit variant( in_place_type_t<T>, std::initializer_list<U>, Args &&... );
+
+		// --------------------------------------------------------------------------
+		template <size_t I, class... Args>
+		constexpr explicit variant( in_place_index_t<I>, Args &&... );
+
+		// --------------------------------------------------------------------------
+		template <size_t I, class U, class... Args>
+		constexpr explicit variant( in_place_index_t<I>, std::initializer_list<U>, Args &&... );
+
+		// --------------------------------------------------------------------------
+		// allocator-extended constructors
+		// --------------------------------------------------------------------------
+
+		// --------------------------------------------------------------------------
+		template <class Alloc> variant( std::allocator_arg_t, const Alloc & );
+		// --------------------------------------------------------------------------
+		template <class Alloc> variant( std::allocator_arg_t, const Alloc &, const variant & );
+		// --------------------------------------------------------------------------
+		template <class Alloc> variant( std::allocator_arg_t, const Alloc &, variant && );
+		// --------------------------------------------------------------------------
+		template <class Alloc, class T> variant( std::allocator_arg_t, const Alloc &, T && );
+		// --------------------------------------------------------------------------
+		template <class Alloc, class T, class... Args>
+		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, Args &&... );
+		// --------------------------------------------------------------------------
+		template <class Alloc, class T, class U, class... Args>
+		variant( std::allocator_arg_t, const Alloc &, in_place_type_t<T>, std::initializer_list<U>,
+				 Args &&... );
+		// --------------------------------------------------------------------------
+		template <class Alloc, size_t I, class... Args>
+		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, Args &&... );
+		// --------------------------------------------------------------------------
+		template <class Alloc, size_t I, class U, class... Args>
+		variant( std::allocator_arg_t, const Alloc &, in_place_index_t<I>, std::initializer_list<U>,
+				 Args &&... );
+
+		// --------------------------------------------------------------------------
+		// 20.7.2.2, destructor
+		// --------------------------------------------------------------------------
+		~variant()
 		{
-		};
+		}
 
-		// helper class to evaluate T_j for overload resolution (N4618 20.7.2.1 - 16)
-		template <typename T, typename Ti> struct evaluate_Ti_helper
-		{
-			using decay_T	 = typename std::decay<T>::type;
-			using FUN_Ti_type = typename FUN_Ti<T, Ti>::type;
-			using type =
-				std::integral_constant<bool, FUN_Ti_type::value &&
-												 !std::is_same<decay_T, variant>::value &&
-												 std::is_constructible<Ti, T>::value &&
-												 !is_specialization_of_in_place_type<decay_T>::value &&
-												 !is_specialization_of_in_place_index<decay_T>::value>;
-		};
+		// 20.7.2.3, assignment
+		variant &					operator=( const variant & );
+		variant &					operator=( variant && ) noexcept; //( see below );
+		template <class T> variant &operator=( T && ) noexcept;		  //( see below );
 
-		// test Ti for overload resolution
-		template <typename T, typename Ti>
-		struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
-		{
-		};
+		// 20.7.2.4, modifiers
+		template <class T, class... Args> void			emplace( Args &&... );
+		template <class T, class U, class... Args> void emplace( std::initializer_list<U>, Args &&... );
+		template <size_t I, class... Args> void			emplace( Args &&... );
+		template <size_t I, class U, class... Args>
+		void emplace( std::initializer_list<U>, Args &&... );
 
-		// helper class to select Tj from all Tis 
-		template <typename T, typename ...Ts> struct select_Tj;
+		// 20.7.2.5, value status
+		constexpr bool   valueless_by_exception() const noexcept;
+		constexpr size_t index() const noexcept;
 
-		//template <typename T> struct select_Tj<T>
-		//{
-		//	using type = void;
-		//};
-
-		//template <typename T, typename Ti, typename ...Ts> struct select_Tj< T, Ti, Ts...>
-		//{
-		//	using type = typename std::conditional< evaluate_Ti<T, Ti>::value,
-		//		! std::disjunction<evaluate_Ti<T, Ts>...>::type::value
-		//};
-
+		// 20.7.2.6, swap
+		void swap( variant & ) noexcept; //( see below );
 	};
 }

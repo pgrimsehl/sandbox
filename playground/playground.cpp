@@ -27,6 +27,10 @@
 class A
 {
 public:
+
+	A() = default;
+	//A( const char * ) {};
+
 	int myMethod()
 	{
 		return 0;
@@ -202,10 +206,25 @@ struct any_serializer : public core::any_serializer_base<serializer_traits, i8, 
 {
 };
 
+core::FUN_Ti<decltype( "Hallo" ), std::string>		 test00;
+core::FUN_Ti<decltype( "Hallo" ), std::string>::type test00_type;
+
+core::evaluate_Ti<decltype( "Hallo" ), std::string>		  test01;
+core::evaluate_Ti<decltype( "Hallo" ), std::string>::type test01_type;
+
+core::select_Tj<decltype( "Hallo" ), int, std::string>		 test02;
+core::select_Tj<decltype( "Hallo" ), int, std::string>::type test02_type;
+
+using selector = core::select_Tj<decltype( "Hallo" ), int, std::string>;
+selector::type selected;
+bool is_not_void = !std::is_same<typename selector::type, void>::value;
+std::enable_if<!std::is_same<typename selector::type, void>::value, typename selector::type>::type enabled_type;
 
 int main()
 {
 	using namespace core;
+
+	core::variant<int, std::string> v0( 1 );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value
@@ -235,11 +254,11 @@ int main()
 	x.emplace<std::string>( std::string{ "works!" } );
 	x.emplace<std::string>( "works!" );
 
-	//std::cout << "lalala\n";
+	// std::cout << "lalala\n";
 
-	//any_serializer::store( x, std::cout );
-	//any_serializer::load( x, std::cin );
-	//std::cout << any_cast<const std::string &>( x );
+	// any_serializer::store( x, std::cout );
+	// any_serializer::load( x, std::cin );
+	// std::cout << any_cast<const std::string &>( x );
 
 	x = core::make_any<std::vector<int>>( { 5, 4, 3, 2, 1 } );
 	assert( any_cast<const std::vector<int> &>( x )[ 2 ] == 3 );
