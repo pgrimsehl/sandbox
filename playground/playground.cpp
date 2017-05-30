@@ -206,20 +206,6 @@ struct any_serializer : public core::any_serializer_base<serializer_traits, i8, 
 {
 };
 
-core::FUN_Ti<decltype( "Hallo" ), std::string>		 test00;
-core::FUN_Ti<decltype( "Hallo" ), std::string>::type test00_type;
-
-core::evaluate_Ti<decltype( "Hallo" ), std::string>		  test01;
-core::evaluate_Ti<decltype( "Hallo" ), std::string>::type test01_type;
-
-core::select_Tj<decltype( "Hallo" ), int, std::string>		 test02;
-core::select_Tj<decltype( "Hallo" ), int, std::string>::type test02_type;
-
-using selector = core::select_Tj<decltype( "Hallo" ), int, std::string>;
-selector::type selected;
-bool is_not_void = !std::is_same<typename selector::type, void>::value;
-std::enable_if<!std::is_same<typename selector::type, void>::value, typename selector::type>::type enabled_type;
-
 int main()
 {
 	using namespace core;
@@ -229,6 +215,7 @@ int main()
 	my_variant v1( "test" );
 	my_variant v2( v0 );
 	my_variant v3( std::move(v1) );
+	my_variant v4( core::in_place_type<std::string>, "inplace" );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value

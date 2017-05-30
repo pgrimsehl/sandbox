@@ -8,100 +8,6 @@ namespace core
 
 	constexpr size_t variant_npos = -1;
 
-	// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
-	// T_j is selected when FUN( std::forward<T>(t) ) is well-formed
-	// std::forward returns an rvalue reference T&&, so does makeT()
-	template <typename T, typename Ti> struct FUN_Ti
-	{
-	private:
-		static T &&			   makeT();
-		static std::true_type  FUN( Ti );
-		static std::false_type FUN( ... );
-
-	public:
-		using type =
-			std::integral_constant<bool,
-								   std::is_same<std::true_type, decltype( FUN( makeT() ) )>::value>;
-	};
-
-	// helper struct for detection of specialization of in_place_type_t
-	template <typename T> struct is_specialization_of_in_place_type : public std::false_type
-	{
-	};
-	template <typename T>
-	struct is_specialization_of_in_place_type<in_place_type_t<T>> : public std::true_type
-	{
-	};
-
-	// helper struct for detection of specialization of in_place_index_t
-	template <typename T> struct is_specialization_of_in_place_index : public std::false_type
-	{
-	};
-
-	template <size_t I>
-	struct is_specialization_of_in_place_index<in_place_index_t<I>> : public std::true_type
-	{
-	};
-
-	// helper class to evaluate T_j for overload resolution (N4618 20.7.2.1 - 16)
-	template <typename T, typename Ti> struct evaluate_Ti_helper
-	{
-		using decay_T	 = typename std::decay<T>::type;
-		using FUN_Ti_type = typename FUN_Ti<T, Ti>::type;
-		using type =
-			std::integral_constant<bool, FUN_Ti_type::value &&
-											 //! std::is_same<decay_T, variant>::value &&
-											 std::is_constructible<Ti, T>::value &&
-											 !is_specialization_of_in_place_type<decay_T>::value &&
-											 !is_specialization_of_in_place_index<decay_T>::value>;
-	};
-
-	// test Ti for overload resolution
-	template <typename T, typename Ti>
-	struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
-	{
-	};
-
-	struct call_recursion_t
-	{
-	};
-
-	// helper class to select Tj from all Tis
-	template <typename T, typename... Ts> struct select_Tj;
-	template <typename T, typename Ti> struct select_Tj<T, Ti>
-	{
-		using eval_type		   = typename std::conditional<evaluate_Ti<T, Ti>::value, Ti, void>::type;
-		using local_index_type = typename std::conditional<std::is_same<void, eval_type>::value,
-														   std::integral_constant<size_t, variant_npos>,
-														   std::integral_constant<size_t, 1>>::type;
-		using index_type	   = local_index_type;
-		using type			   = eval_type;
-	};
-	template <typename T, typename Ti, typename... Ts> struct select_Tj<T, Ti, Ts...>
-	{
-		using this_type = select_Tj<T, Ti, Ts...>;
-		using eval_type = typename std::conditional<
-			evaluate_Ti<T, Ti>::value,
-			typename std::conditional<!std::disjunction<evaluate_Ti<T, Ts>...>::value, Ti, void>::type,
-			call_recursion_t>::type;
-		using selector_type =
-			typename std::conditional<std::is_same<eval_type, call_recursion_t>::value,
-									  typename select_Tj<T, Ts...>, this_type>::type;
-		using local_index_type = typename std::conditional<
-			std::is_same<selector_type, this_type>::value,
-			typename std::conditional<std::is_same<void, eval_type>::value,
-									  std::integral_constant<size_t, variant_npos>,
-									  std::integral_constant<size_t, sizeof...( Ts ) + 1>>::type,
-			call_recursion_t>::type;
-
-		using index_type =
-			typename std::conditional<std::is_same<call_recursion_t, local_index_type>::value,
-									  typename selector_type::local_index_type, local_index_type>::type;
-
-		using type = typename std::conditional<std::is_same<selector_type, this_type>::value, eval_type,
-											   typename selector_type::eval_type>::type;
-	};
-
 	/*
 	N4618 20.7
 	Header <variant> synopsis
@@ -198,6 +104,130 @@ namespace core
 	// N4618 20.7.2 class template variant
 	template <class... Types> class variant
 	{
+
+		// helper class for the imaginary function FUN(Ti) (N4618 20.7.2.1 - 12)
+		// T_j is selected when FUN( std::forward<T>(t) ) is well-formed
+		// std::forward returns an rvalue reference T&&, so does makeT()
+		template <typename T, typename Ti> struct FUN_Ti
+		{
+		private:
+			static T &&			   makeT();
+			static std::true_type  FUN( Ti );
+			static std::false_type FUN( ... );
+
+		public:
+			using type =
+				std::integral_constant<bool,
+									   std::is_same<std::true_type, decltype( FUN( makeT() ) )>::value>;
+		};
+
+		// helper struct for detection of specialization of in_place_type_t
+		template <typename T> struct is_specialization_of_in_place_type : public std::false_type
+		{
+		};
+		template <typename T>
+		struct is_specialization_of_in_place_type<in_place_type_t<T>> : public std::true_type
+		{
+		};
+
+		// helper struct for detection of specialization of in_place_index_t
+		template <typename T> struct is_specialization_of_in_place_index : public std::false_type
+		{
+		};
+
+		template <size_t I>
+		struct is_specialization_of_in_place_index<in_place_index_t<I>> : public std::true_type
+		{
+		};
+
+		// helper class to evaluate T_j for overload resolution (N4618 20.7.2.1 - 16)
+		template <typename T, typename Ti> struct evaluate_Ti_helper
+		{
+			using decay_T	 = typename std::decay<T>::type;
+			using FUN_Ti_type = typename FUN_Ti<T, Ti>::type;
+			using type =
+				std::integral_constant<bool, FUN_Ti_type::value &&
+												 //! std::is_same<decay_T, variant>::value &&
+												 std::is_constructible<Ti, T>::value &&
+												 !is_specialization_of_in_place_type<decay_T>::value &&
+												 !is_specialization_of_in_place_index<decay_T>::value>;
+		};
+
+		// test Ti for overload resolution
+		template <typename T, typename Ti>
+		struct evaluate_Ti : public std::integral_constant<bool, evaluate_Ti_helper<T, Ti>::type::value>
+		{
+		};
+
+		struct call_recursion_t
+		{
+		};
+
+		// helper class to select Tj from all Tis
+		template <typename T, typename... Ts> struct select_Tj;
+		template <typename T, typename Ti> struct select_Tj<T, Ti>
+		{
+			using eval_type = typename std::conditional<evaluate_Ti<T, Ti>::value, Ti, void>::type;
+			using local_index_type =
+				typename std::conditional<std::is_same<void, eval_type>::value,
+										  std::integral_constant<size_t, variant_npos>,
+										  std::integral_constant<size_t, 1>>::type;
+			using index_type = local_index_type;
+			using type		 = eval_type;
+		};
+		template <typename T, typename Ti, typename... Ts> struct select_Tj<T, Ti, Ts...>
+		{
+			using this_type = select_Tj<T, Ti, Ts...>;
+			using eval_type = typename std::conditional<
+				evaluate_Ti<T, Ti>::value,
+				typename std::conditional<!std::disjunction<evaluate_Ti<T, Ts>...>::value, Ti,
+										  void>::type,
+				call_recursion_t>::type;
+			using selector_type =
+				typename std::conditional<std::is_same<eval_type, call_recursion_t>::value,
+										  typename select_Tj<T, Ts...>, this_type>::type;
+			using local_index_type = typename std::conditional<
+				std::is_same<selector_type, this_type>::value,
+				typename std::conditional<std::is_same<void, eval_type>::value,
+										  std::integral_constant<size_t, variant_npos>,
+										  std::integral_constant<size_t, sizeof...( Ts ) + 1>>::type,
+				call_recursion_t>::type;
+
+			using index_type =
+				typename std::conditional<std::is_same<call_recursion_t, local_index_type>::value,
+										  typename selector_type::local_index_type,
+										  local_index_type>::type;
+
+			using type = typename std::conditional<std::is_same<selector_type, this_type>::value,
+												   eval_type, typename selector_type::eval_type>::type;
+		};
+
+		// helper class to test uniqueness of type T in Ts...
+		template <typename T, typename... Ts> struct is_unique;
+		template <typename T, typename U>
+		struct is_unique<T, U>
+			: public std::conditional<std::is_same<T, U>::value, std::false_type, std::true_type>::type
+		{
+		};
+		template <typename T, typename U, typename... Ts>
+		struct is_unique<T, U, Ts...>
+			: public std::conditional<std::is_same<T, U>::value, std::false_type,
+									  is_unique<T, Ts...>>::type
+		{
+		};
+
+		// helper class to test for uniqueness of all types in Ts...
+		template <typename... Ts> struct no_duplicates;
+		template <typename T> struct no_duplicates<T> : public std::true_type
+		{
+		};
+		template <typename T, typename... Ts>
+		struct no_duplicates<T, Ts...>
+			: public std::integral_constant<bool,
+											is_unique<T, Ts...>::value && no_duplicates<Ts...>::value>
+		{
+		};
+
 		// storage for in-place construction of all types in Types
 		using storage_type = std::aligned_union<8, Types...>;
 
@@ -271,6 +301,8 @@ namespace core
 		static_assert( 0 < sizeof...( Types ),
 					   "Template parameter list for variant must not be empty" );
 
+		// static_assert( no_duplicates<Types...>::value, "Typelist contains duplicates" );
+
 		using T0 = typename std::tuple_element<0, std::tuple<Types...>>::type;
 
 		storage_type	   m_Storage;
@@ -295,11 +327,11 @@ namespace core
 		//			  std::conjunction<std::is_copy_constructible<Types>...>::value>::type>
 		variant( const variant &_rhs )
 		{
-			m_Index = _rhs.index();
-			if ( variant_npos != m_Index )
+			if ( variant_npos != _rhs.index() )
 			{
-				m_VTables[ m_Index ].copy_construct( m_Storage, _rhs.m_Storage );
+				m_VTables[ _rhs.index() ].copy_construct( m_Storage, _rhs.m_Storage );
 			}
+			m_Index = _rhs.index();
 		}
 
 		// --------------------------------------------------------------------------
@@ -308,11 +340,11 @@ namespace core
 		variant( variant &&_rhs )
 			CORE_NOTHROW_IF( std::conjunction<std::is_nothrow_move_constructible<Types>...>::value )
 		{
-			m_Index = _rhs.index();
-			if ( variant_npos != m_Index )
+			if ( variant_npos != _rhs.index() )
 			{
-				m_VTables[ m_Index ].move_construct( m_Storage, _rhs.m_Storage );
+				m_VTables[ _rhs.index() ].move_construct( m_Storage, _rhs.m_Storage );
 			}
+			m_Index = _rhs.index();
 		}
 
 		// --------------------------------------------------------------------------
@@ -322,12 +354,19 @@ namespace core
 		constexpr variant( T &&_value )
 			CORE_NOTHROW_IF( ( std::is_nothrow_constructible<typename selector::type, T>::value ) )
 		{
-			new ( static_cast<void *>( &m_Storage ) ) selector::type(std::forward<T>(_value));
-			m_Index = sizeof...(Types) - selector::index_type::value;
+			new ( static_cast<void *>( &m_Storage ) ) selector::type( std::forward<T>( _value ) );
+			m_Index = sizeof...( Types ) - selector::index_type::value;
 		}
 
 		// --------------------------------------------------------------------------
-		template <class T, class... Args> constexpr explicit variant( in_place_type_t<T>, Args &&... );
+		template <class T, class... Args,
+				  typename = std::enable_if<is_unique<T, Types...>::value &&
+											std::is_constructible<T, Args...>::value>::type>
+		constexpr explicit variant( in_place_type_t<T>, Args &&..._args )
+		{
+			new ( static_cast<void *>( &m_Storage ) ) selector::type( std::forward<Args>( _args ) );
+			m_Index = sizeof...(Types)-selector::index_type::value;
+		}
 
 		// --------------------------------------------------------------------------
 		template <class T, class U, class... Args>
