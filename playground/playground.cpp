@@ -27,9 +27,8 @@
 class A
 {
 public:
-
 	A() = default;
-	//A( const char * ) {};
+	// A( const char * ) {};
 
 	int myMethod()
 	{
@@ -206,6 +205,21 @@ struct any_serializer : public core::any_serializer_base<serializer_traits, i8, 
 {
 };
 
+//// helper class to test uniqueness of type T in Ts...
+//template <typename T, typename... Ts> struct is_unique;
+//template <typename T> struct is_unique<T> : public std::true_type
+//{
+//};
+//template <typename T, typename U, typename... Ts>
+//struct is_unique<T, U, Ts...>
+//	: public std::conditional<std::is_same<T, U>::value, std::false_type,
+//	is_unique<T, Ts...>>::type
+//{
+//};
+//
+//using unique_type = is_unique<std::string, std::string>;
+//bool								unique = unique_type::value;
+
 int main()
 {
 	using namespace core;
@@ -214,7 +228,7 @@ int main()
 	my_variant v0( 1 );
 	my_variant v1( "test" );
 	my_variant v2( v0 );
-	my_variant v3( std::move(v1) );
+	my_variant v3( std::move( v1 ) );
 	my_variant v4( core::in_place_type<std::string>, "inplace" );
 
 	any x( 5 );						   // x holds int

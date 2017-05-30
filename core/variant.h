@@ -228,6 +228,17 @@ namespace core
 		{
 		};
 
+		// helper class to compute the (inverse) index of T in Ts...
+		template <typename T, typename... Ts> struct index_of;
+		template <typename T, typename... Ts>
+		struct index_of<T, T, Ts...> : public std::integral_constant<size_t, sizeof...( Ts ) + 1>
+		{
+		};
+		template <typename T, typename U, typename... Ts>
+		struct index_of<T, U, Ts...> : public index_of<T, Ts...>
+		{
+		};
+
 		// storage for in-place construction of all types in Types
 		using storage_type = std::aligned_union<8, Types...>;
 
@@ -359,13 +370,13 @@ namespace core
 		}
 
 		// --------------------------------------------------------------------------
-		template <class T, class... Args,
+		template <class T, class... Args/*,
 				  typename = std::enable_if<is_unique<T, Types...>::value &&
-											std::is_constructible<T, Args...>::value>::type>
-		constexpr explicit variant( in_place_type_t<T>, Args &&..._args )
+											std::is_constructible<T, Args...>::value>::type*/>
+		constexpr explicit variant( in_place_type_t<T>, Args &&... _args )
 		{
-			new ( static_cast<void *>( &m_Storage ) ) selector::type( std::forward<Args>( _args ) );
-			m_Index = sizeof...(Types)-selector::index_type::value;
+			new ( static_cast<void *>( &m_Storage ) ) T( std::forward<Args>( _args )... );
+			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
 		}
 
 		// --------------------------------------------------------------------------
