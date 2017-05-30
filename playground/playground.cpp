@@ -226,7 +226,9 @@ int main()
 
 	using my_variant = core::variant<int, std::string>;
 	my_variant v0( 1 );
-	my_variant v1;
+	my_variant v1( "test" );
+	my_variant v2( v0 );
+	my_variant v3( std::move(v1) );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value

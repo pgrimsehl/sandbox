@@ -176,7 +176,16 @@ namespace core
 		using storage_type = std::aligned_union<8, Types...>;
 
 		// method table to handle a value of type ValueType, without knowledge about the type
-		template <class ValueType> struct vtable_type
+		struct vtable_type
+		{
+			void ( *copy_construct )( storage_type &_dst, const storage_type &_src );
+			void ( *move_construct )( storage_type &_dst, storage_type &_src );
+			void ( *swap )( storage_type &_dst, storage_type &_src );
+			void ( *destroy )( storage_type &_dst );
+		};
+
+		// method table to handle a value of type ValueType, without knowledge about the type
+		template <class ValueType> struct typed_vtable_type
 		{
 			// construct a new object using ValueType's copy constructor
 			static void copy_construct( storage_type &_dst, const storage_type &_src )
@@ -203,7 +212,7 @@ namespace core
 		};
 
 		// construction of type ValueType
-		template <typename ValueTypeT> struct constructor_type
+		template <typename ValueType> struct constructor_type
 		{
 			// constructor overload
 			template <class... Args> static void construct( storage_type &_storage, Args &&... _args )
@@ -238,8 +247,9 @@ namespace core
 
 		using T0 = typename std::tuple_element<0, std::tuple<Types...>>::type;
 
-		storage_type m_Storage;
-		size_t		 m_Variant = variant_npos;
+		storage_type	   m_Storage;
+		size_t			   m_Index = variant_npos;
+		static vtable_type m_VTables[ sizeof...( Types ) ];
 
 	public:
 		// --------------------------------------------------------------------------
@@ -250,17 +260,33 @@ namespace core
 		template <typename = std::enable_if<std::is_nothrow_default_constructible<T0>::value>::type>
 		constexpr variant() CORE_NOTHROW_IF( ( std::is_nothrow_default_constructible_v<T0>::value ) )
 		{
-			new (static_cast<void*>(&m_Storage)) T0();
+			new ( static_cast<void *>( &m_Storage ) ) T0();
+			m_Index = 0;
 		}
 
 		// --------------------------------------------------------------------------
+		//template <typename = typename std::enable_if<
+		//			  std::conjunction<std::is_copy_constructible<Types>...>::value>::type>
 		variant( const variant &_rhs )
 		{
+			m_Index = _rhs.index();
+			if ( variant_npos != m_Index )
+			{
+				m_VTables[ m_Index ].copy_construct( m_Storage, _rhs.m_Storage );
+			}
 		}
 
 		// --------------------------------------------------------------------------
-		variant( variant &&_rhs ) noexcept //( see below )
+		template <typename = typename std::enable_if<
+					  std::conjunction<std::is_move_constructible<Types>...>::value>::type>
+		variant( variant &&_rhs )
+			CORE_NOTHROW_IF( std::conjunction<std::is_nothrow_move_constructible<Types>...>::value )
 		{
+			m_Index = _rhs.index();
+			if ( variant_npos != m_Index )
+			{
+				m_VTables[ m_Index ].move_construct( m_Storage, _rhs.m_Storage );
+			}
 		}
 
 		// --------------------------------------------------------------------------
@@ -334,10 +360,22 @@ namespace core
 		void emplace( std::initializer_list<U>, Args &&... );
 
 		// 20.7.2.5, value status
-		constexpr bool   valueless_by_exception() const noexcept;
-		constexpr size_t index() const noexcept;
+		constexpr bool valueless_by_exception() const noexcept
+		{
+			return variant_npos == m_Index;
+		}
+		constexpr size_t index() const CORE_NOTHROW
+		{
+			return m_Index;
+		}
 
 		// 20.7.2.6, swap
 		void swap( variant & ) noexcept; //( see below );
+	};
+
+	template <typename... Types>
+	typename variant<Types...>::vtable_type variant<Types...>::m_VTables[ sizeof...( Types ) ] = {
+		{ &typed_vtable_type<Types>::copy_construct, &typed_vtable_type<Types>::move_construct,
+		  &typed_vtable_type<Types>::swap, &typed_vtable_type<Types>::destroy }...
 	};
 }
