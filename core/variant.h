@@ -74,6 +74,10 @@ namespace core
 			evaluate_Ti<T, Ti>::value,
 			typename std::conditional<!std::disjunction<evaluate_Ti<T, Ts>...>::value, Ti, void>::type,
 			typename select_Tj<T, Ts...>::type>::type;
+		//using index_type = typename std::conditional<
+		//	std::is_same<type, void>::value,
+		//	std::integral_constant<size_t, variant_npos>,
+		//	std::integral_constant<size_t, variant_npos>>::type;
 	};
 
 	/*
