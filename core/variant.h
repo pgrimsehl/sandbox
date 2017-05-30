@@ -62,22 +62,44 @@ namespace core
 	{
 	};
 
+	struct call_recursion_t
+	{
+	};
+
 	// helper class to select Tj from all Tis
 	template <typename T, typename... Ts> struct select_Tj;
 	template <typename T, typename Ti> struct select_Tj<T, Ti>
 	{
-		using type = typename std::conditional<evaluate_Ti<T, Ti>::value, Ti, void>::type;
+		using eval_type		   = typename std::conditional<evaluate_Ti<T, Ti>::value, Ti, void>::type;
+		using local_index_type = typename std::conditional<std::is_same<void, eval_type>::value,
+														   std::integral_constant<size_t, variant_npos>,
+														   std::integral_constant<size_t, 1>>::type;
+		using index_type	   = local_index_type;
+		using type			   = eval_type;
 	};
 	template <typename T, typename Ti, typename... Ts> struct select_Tj<T, Ti, Ts...>
 	{
-		using type = typename std::conditional<
+		using this_type = select_Tj<T, Ti, Ts...>;
+		using eval_type = typename std::conditional<
 			evaluate_Ti<T, Ti>::value,
 			typename std::conditional<!std::disjunction<evaluate_Ti<T, Ts>...>::value, Ti, void>::type,
-			typename select_Tj<T, Ts...>::type>::type;
-		//using index_type = typename std::conditional<
-		//	std::is_same<type, void>::value,
-		//	std::integral_constant<size_t, variant_npos>,
-		//	std::integral_constant<size_t, variant_npos>>::type;
+			call_recursion_t>::type;
+		using selector_type =
+			typename std::conditional<std::is_same<eval_type, call_recursion_t>::value,
+									  typename select_Tj<T, Ts...>, this_type>::type;
+		using local_index_type = typename std::conditional<
+			std::is_same<selector_type, this_type>::value,
+			typename std::conditional<std::is_same<void, eval_type>::value,
+									  std::integral_constant<size_t, variant_npos>,
+									  std::integral_constant<size_t, sizeof...( Ts ) + 1>>::type,
+			call_recursion_t>::type;
+
+		using index_type =
+			typename std::conditional<std::is_same<call_recursion_t, local_index_type>::value,
+									  typename selector_type::local_index_type, local_index_type>::type;
+
+		using type = typename std::conditional<std::is_same<selector_type, this_type>::value, eval_type,
+											   typename selector_type::eval_type>::type;
 	};
 
 	/*
@@ -269,7 +291,7 @@ namespace core
 		}
 
 		// --------------------------------------------------------------------------
-		//template <typename = typename std::enable_if<
+		// template <typename = typename std::enable_if<
 		//			  std::conjunction<std::is_copy_constructible<Types>...>::value>::type>
 		variant( const variant &_rhs )
 		{
@@ -300,6 +322,8 @@ namespace core
 		constexpr variant( T &&_value )
 			CORE_NOTHROW_IF( ( std::is_nothrow_constructible<typename selector::type, T>::value ) )
 		{
+			new ( static_cast<void *>( &m_Storage ) ) selector::type(std::forward<T>(_value));
+			m_Index = sizeof...(Types) - selector::index_type::value;
 		}
 
 		// --------------------------------------------------------------------------
