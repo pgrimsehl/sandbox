@@ -203,28 +203,16 @@ namespace core
 		};
 
 		// helper class to test uniqueness of type T in Ts...
-		template <typename T, typename... Ts> struct is_unique;
-		template <typename T, typename U>
-		struct is_unique<T, U>
-			: public std::conditional<std::is_same<T, U>::value, std::false_type, std::true_type>::type
-		{
-		};
-		template <typename T, typename U, typename... Ts>
-		struct is_unique<T, U, Ts...>
-			: public std::conditional<std::is_same<T, U>::value, std::false_type,
-									  is_unique<T, Ts...>>::type
-		{
-		};
-
-		// helper class to test for uniqueness of all types in Ts...
-		template <typename... Ts> struct no_duplicates;
-		template <typename T> struct no_duplicates<T> : public std::true_type
+		template <typename T, typename... Ts> struct contains_one_instance : public std::false_type
 		{
 		};
 		template <typename T, typename... Ts>
-		struct no_duplicates<T, Ts...>
-			: public std::integral_constant<bool,
-											is_unique<T, Ts...>::value && no_duplicates<Ts...>::value>
+		struct contains_one_instance<T, T, Ts...>
+			: public std::integral_constant<bool, !contains_one_instance<T, Ts...>::value>
+		{
+		};
+		template <typename T, typename U, typename... Ts>
+		struct contains_one_instance<T, U, Ts...> : public contains_one_instance<T, Ts...>
 		{
 		};
 
@@ -370,9 +358,9 @@ namespace core
 		}
 
 		// --------------------------------------------------------------------------
-		template <class T, class... Args/*,
-				  typename = std::enable_if<is_unique<T, Types...>::value &&
-											std::is_constructible<T, Args...>::value>::type*/>
+		template <class T, class... Args,
+				  typename = std::enable_if<contains_one_instance<T, Types...>::value &&
+											std::is_constructible<T, Args...>::value>::type>
 		constexpr explicit variant( in_place_type_t<T>, Args &&... _args )
 		{
 			new ( static_cast<void *>( &m_Storage ) ) T( std::forward<Args>( _args )... );
