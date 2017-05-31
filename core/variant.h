@@ -257,6 +257,8 @@ namespace core
 		{
 			void ( *copy_construct )( storage_type &_dst, const storage_type &_src );
 			void ( *move_construct )( storage_type &_dst, storage_type &_src );
+			void ( *copy_assign )( storage_type &_dst, const storage_type &_src );
+			void ( *move_assign )( storage_type &_dst, storage_type &_src );
 			void ( *swap )( storage_type &_dst, storage_type &_src );
 			void ( *destroy )( storage_type &_dst );
 		};
@@ -273,6 +275,18 @@ namespace core
 			static void move_construct( storage_type &_dst, storage_type &_src )
 			{
 				new ( &_dst ) ValueType( std::move( reinterpret_cast<ValueType &>( _src ) ) );
+				destroy( _src );
+			}
+			// assign value using ValueType's copy assignment operator
+			static void copy_assign( storage_type &_dst, const storage_type &_src )
+			{
+				reinterpret_cast<ValueType &>( _dst ) = reinterpret_cast<const ValueType &>( _src );
+			}
+			// assign value using ValueType's move assignment operator
+			static void move_assign( storage_type &_dst, storage_type &_src )
+			{
+				reinterpret_cast<ValueType &>( _dst ) =
+					std::move( reinterpret_cast<const ValueType &>( _src ) );
 				destroy( _src );
 			}
 			// exchange values using std::swap
@@ -402,12 +416,31 @@ namespace core
 		}
 
 		// --------------------------------------------------------------------------
-		template <size_t I, class... Args>
-		constexpr explicit variant( in_place_index_t<I>, Args &&... );
+		template <size_t I, class... Args,
+				  typename = std::enable_if<
+					  ( sizeof...( Types ) > I ) &&
+					  std::is_constructible<typename std::tuple_element<I, std::tuple<Types...>>::type,
+											Args...>::value>::type>
+		constexpr explicit variant( in_place_index_t<I>, Args &&... _args )
+		{
+			using T = typename std::tuple_element<I, std::tuple<Types...>>::type;
+			new ( static_cast<void *>( &m_Storage ) ) T( std::forward<Args>( _args )... );
+			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
+		}
 
 		// --------------------------------------------------------------------------
-		template <size_t I, class U, class... Args>
-		constexpr explicit variant( in_place_index_t<I>, std::initializer_list<U>, Args &&... );
+		template <size_t I, class U, class... Args,
+				  typename = std::enable_if<
+					  ( sizeof...( Types ) > I ) &&
+					  std::is_constructible<typename std::tuple_element<I, std::tuple<Types...>>::type,
+											std::initializer_list<U> &, Args...>::value>::type>
+		constexpr explicit variant( in_place_index_t<I>, std::initializer_list<U> _il,
+									Args &&... _args )
+		{
+			using T = typename std::tuple_element<I, std::tuple<Types...>>::type;
+			new ( static_cast<void *>( &m_Storage ) ) T( _il, std::forward<Args>( _args )... );
+			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
+		}
 
 		// --------------------------------------------------------------------------
 		// allocator-extended constructors
@@ -439,18 +472,51 @@ namespace core
 		// --------------------------------------------------------------------------
 		// 20.7.2.2, destructor
 		// --------------------------------------------------------------------------
+		// TODO: Ensure that
+		// Remarks: If is_trivially_destructible_v<Ti> == true for all Ti then this destructor shall be
+		// a trivial destructor.
 		~variant()
 		{
 			if ( variant_npos != m_Index )
 			{
 				m_VTables[ m_Index ].destroy( m_Storage );
+				m_Index = variant_npos;
 			}
 		}
 
+		// --------------------------------------------------------------------------
 		// 20.7.2.3, assignment
-		variant &					operator=( const variant & );
-		variant &					operator=( variant && ) noexcept; //( see below );
-		template <class T> variant &operator=( T && ) noexcept;		  //( see below );
+		// --------------------------------------------------------------------------
+
+		// --------------------------------------------------------------------------
+		variant &operator=( const variant &_rhs )
+		{
+			if ( this != &_rhs )
+			{
+				if ( variant_npos != m_Index )
+				{
+					if ( m_Index == _rhs.m_Index )
+					{
+						m_VTables[ m_Index ].copy_assign( m_Storage, _rhs.m_Storage );
+						return *this;
+					}
+					m_VTables[ m_Index ].destroy( m_Storage );
+				}
+
+				m_Index = _rhs.m_Index;
+				if ( variant_npos != m_Index )
+				{
+					m_VTables[ m_Index ].copy_construct( m_Storage, _rhs.m_Storage );
+				}
+			}
+			return *this;
+		}
+
+		// --------------------------------------------------------------------------
+		variant &operator=( variant && ) noexcept; //( see below );
+
+		// --------------------------------------------------------------------------
+		template <class T> variant &operator=( T && ) noexcept; //( see below );
 
 		// 20.7.2.4, modifiers
 		template <class T, class... Args> void			emplace( Args &&... );
@@ -476,6 +542,7 @@ namespace core
 	template <typename... Types>
 	typename variant<Types...>::vtable_type variant<Types...>::m_VTables[ sizeof...( Types ) ] = {
 		{ &typed_vtable_type<Types>::copy_construct, &typed_vtable_type<Types>::move_construct,
+		  &typed_vtable_type<Types>::copy_assign, &typed_vtable_type<Types>::move_assign,
 		  &typed_vtable_type<Types>::swap, &typed_vtable_type<Types>::destroy }...
 	};
 }

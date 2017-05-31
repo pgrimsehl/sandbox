@@ -216,6 +216,8 @@ int main()
 	my_variant v4( core::in_place_type<std::string>, "inplace" );
 	my_variant v5( core::in_place_type<std::vector<int>> );
 	my_variant v6( core::in_place_type<std::vector<int>>, { 1, 2, 3, 4 } );
+	my_variant v7( core::in_place_index<2>, "inplace" );
+	my_variant v8( core::in_place_index<3>, { 1, 2, 3, 4 } );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value
