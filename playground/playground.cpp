@@ -204,17 +204,18 @@ struct any_serializer : public core::any_serializer_base<serializer_traits, i8, 
 														 i64, u64, f32, f64, std::string>
 {
 };
-
 int main()
 {
 	using namespace core;
 
-	using my_variant = core::variant<int, std::string>;
+	using my_variant = core::variant<int, std::tuple<A>, std::string, std::vector<int>>;
 	my_variant v0( 1 );
 	my_variant v1( "test" );
 	my_variant v2( v0 );
 	my_variant v3( std::move( v1 ) );
 	my_variant v4( core::in_place_type<std::string>, "inplace" );
+	my_variant v5( core::in_place_type<std::vector<int>> );
+	my_variant v6( core::in_place_type<std::vector<int>>, { 1, 2, 3, 4 } );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value
