@@ -491,29 +491,18 @@ namespace core
 		// --------------------------------------------------------------------------
 		variant &operator=( const variant &_rhs )
 		{
-			if ( this != &_rhs )
-			{
-				if ( variant_npos != m_Index )
-				{
-					if ( m_Index == _rhs.m_Index )
-					{
-						m_VTables[ m_Index ].copy_assign( m_Storage, _rhs.m_Storage );
-						return *this;
-					}
-					m_VTables[ m_Index ].destroy( m_Storage );
-				}
-
-				m_Index = _rhs.m_Index;
-				if ( variant_npos != m_Index )
-				{
-					m_VTables[ m_Index ].copy_construct( m_Storage, _rhs.m_Storage );
-				}
-			}
+			variant( _rhs ).swap( *this );
 			return *this;
 		}
 
 		// --------------------------------------------------------------------------
-		variant &operator=( variant && ) noexcept; //( see below );
+		variant &operator=( variant &&_rhs )
+			CORE_NOTHROW_IF( std::is_nothrow_move_constructible_v<Types>...
+								 &&std::is_nothrow_move_assignable_v<Types>... )
+		{
+			variant( std::move( _rhs ) ).swap( *this );
+			return *this;
+		}
 
 		// --------------------------------------------------------------------------
 		template <class T> variant &operator=( T && ) noexcept; //( see below );
@@ -535,8 +524,65 @@ namespace core
 			return m_Index;
 		}
 
+		// --------------------------------------------------------------------------
 		// 20.7.2.6, swap
-		void swap( variant & ) noexcept; //( see below );
+		// TODO: check correct order of statements to meet the defined state criteras
+		// after an exception occured during construction
+		// --------------------------------------------------------------------------
+		void swap( variant &_rhs )
+			CORE_NOTHROW_IF( std::conjunction<std::is_move_constructible<Types>... /*,
+											  std::is_nothrow_swappable<Types>...*/>::value )
+		{
+			static_assert( std::conjunction<std::is_move_constructible<Types>...>::value,
+						   "All value types must be move constructible." );
+			/*static_assert( std::conjunction<std::is_nothrow_swappable<Types>...>::value,
+						   "All value types must be no-throw-swappable." );*/
+
+			// no self-swapping
+			if ( this == &_rhs )
+			{
+				return;
+			}
+
+			// no values to swap
+			if ( ( variant_npos == index() ) && ( variant_npos == _rhs.index() ) )
+			{
+				return;
+			}
+
+			// other variant holds no value: move our value to _rhs
+			if ( variant_npos == _rhs.index() )
+			{
+				m_VTables[ m_Index ].move_construct( _rhs.m_Storage, m_Storage );
+				_rhs.m_Index = m_Index;
+				m_Index		 = variant_npos;
+				return;
+			}
+			// we hold no value: move _rhs value to us
+			else if ( variant_npos == index() )
+			{
+				m_VTables[ _rhs.index() ].move_construct( m_Storage, _rhs.m_Storage );
+				m_Index		 = _rhs.index();
+				_rhs.m_Index = variant_npos;
+				return;
+			}
+			// we hold the same value type: use swap of contained type
+			else if ( _rhs.index() == index() )
+			{
+				m_VTables[ _rhs.index() ].swap( m_Storage, _rhs.m_Storage );
+				return;
+			}
+			// we hold different value types
+			else
+			{
+				variant temp( std::move( *this ) );
+				m_VTables[ _rhs.index() ].move_construct( m_Storage, _rhs.m_Storage );
+				m_Index = _rhs.index();
+				m_VTables[ temp.index() ].move_construct( _rhs.m_Storage, temp.m_Storage );
+				_rhs.m_Index = temp.index();
+				temp.m_Index = variant_npos;
+			}
+		}
 	};
 
 	template <typename... Types>
