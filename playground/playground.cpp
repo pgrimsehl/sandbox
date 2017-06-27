@@ -221,6 +221,7 @@ int main()
 	v8.swap( v1 );
 	v8 = 5;
 	v8.emplace<std::string>( "ladida" );
+	v8.emplace<std::vector<int>>( { 1, 2, 3, 4 } );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value

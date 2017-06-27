@@ -435,7 +435,7 @@ namespace core
 		{
 			using T = typename std::tuple_element<I, std::tuple<Types...>>::type;
 			new ( static_cast<void *>( &m_Storage ) ) T( std::forward<Args>( _args )... );
-			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
+			m_Index = I;
 		}
 
 		// --------------------------------------------------------------------------
@@ -449,7 +449,7 @@ namespace core
 		{
 			using T = typename std::tuple_element<I, std::tuple<Types...>>::type;
 			new ( static_cast<void *>( &m_Storage ) ) T( _il, std::forward<Args>( _args )... );
-			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
+			m_Index = I;
 		}
 
 		// --------------------------------------------------------------------------
@@ -539,16 +539,54 @@ namespace core
 		}
 
 		// --------------------------------------------------------------------------
-		template <class T, class U, class... Args> void emplace( std::initializer_list<U>, Args &&... );
-		template <size_t I, class... Args> void			emplace( Args &&... );
-		template <size_t I, class U, class... Args>
-		void emplace( std::initializer_list<U>, Args &&... );
+		template <class T, class U, class... Args,
+				  typename = std::enable_if<
+					  contains_one_instance<T, Types...>::value &&
+					  std::is_constructible<T, std::initializer_list<U> &, Args...>::value>::type>
+		void emplace( std::initializer_list<U> _il, Args &&... _args )
+		{
+			make_valueless();
+			new ( static_cast<void *>( &m_Storage ) ) T( _il, std::forward<Args>( _args )... );
+			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
+		}
 
+		// --------------------------------------------------------------------------
+		template <size_t I, class... Args,
+				  typename = std::enable_if<
+					  ( sizeof...( Types ) > I ) &&
+					  std::is_constructible<typename std::tuple_element<I, std::tuple<Types...>>::type,
+											Args...>::value>::type>
+		void emplace( Args &&... _args )
+		{
+			make_valueless();
+			using T = typename std::tuple_element<I, std::tuple<Types...>>::type;
+			new ( static_cast<void *>( &m_Storage ) ) T( std::forward<Args>( _args )... );
+			m_Index = I;
+		}
+
+		// --------------------------------------------------------------------------
+		template <size_t I, class U, class... Args,
+				  typename = std::enable_if<
+					  ( sizeof...( Types ) > I ) &&
+					  std::is_constructible<typename std::tuple_element<I, std::tuple<Types...>>::type,
+											std::initializer_list<U> &, Args...>::value>::type>
+		void emplace( std::initializer_list<U> _il, Args &&... _args )
+		{
+			make_valueless();
+			using T = typename std::tuple_element<I, std::tuple<Types...>>::type;
+			new ( static_cast<void *>( &m_Storage ) ) T( _il, std::forward<Args>( _args )... );
+			m_Index = I;
+		}
+
+		// --------------------------------------------------------------------------
 		// 20.7.2.5, value status
+		// --------------------------------------------------------------------------
 		constexpr bool valueless_by_exception() const noexcept
 		{
 			return variant_npos == m_Index;
 		}
+
+		// --------------------------------------------------------------------------
 		constexpr size_t index() const CORE_NOTHROW
 		{
 			return m_Index;
