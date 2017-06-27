@@ -219,6 +219,8 @@ int main()
 	my_variant v7( core::in_place_index<2>, "inplace" );
 	my_variant v8( core::in_place_index<3>, { 1, 2, 3, 4 } );
 	v8.swap( v1 );
+	v8 = 5;
+	v8.emplace<std::string>( "ladida" );
 
 	any x( 5 );						   // x holds int
 	assert( any_cast<int>( x ) == 5 ); // cast to value

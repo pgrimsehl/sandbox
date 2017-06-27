@@ -338,6 +338,16 @@ namespace core
 
 		// static_assert( no_duplicates<Types...>::value, "Typelist contains duplicates" );
 
+		// helper method to make the variant valueless
+		void make_valueless()
+		{
+			if ( variant_npos > m_Index )
+			{
+				m_VTables[ m_Index ].destroy( m_Storage );
+				m_Index = variant_npos;
+			}
+		}
+
 		using T0 = typename std::tuple_element<0, std::tuple<Types...>>::type;
 
 		storage_type	   m_Storage;
@@ -505,10 +515,30 @@ namespace core
 		}
 
 		// --------------------------------------------------------------------------
-		template <class T> variant &operator=( T && ) noexcept; //( see below );
+		template <class T, typename selector = typename select_Tj<T, Types...>,
+				  typename = std::enable_if<!std::is_same<typename selector::type, void>::value,
+											typename selector::type>::type>
+		variant &operator=( T &&_value )
+			CORE_NOTHROW_IF( ( std::is_nothrow_constructible<typename selector::type, T>::value ) )
+		{
+			variant( std::move( _value ) ).swap( *this );
+			return *this;
+		}
 
+		// --------------------------------------------------------------------------
 		// 20.7.2.4, modifiers
-		template <class T, class... Args> void			emplace( Args &&... );
+		// --------------------------------------------------------------------------
+		template <class T, class... Args,
+				  typename = std::enable_if<contains_one_instance<T, Types...>::value &&
+											std::is_constructible<T, Args...>::value>::type>
+		void emplace( Args &&... _args )
+		{
+			make_valueless();
+			new ( static_cast<void *>( &m_Storage ) ) T( std::forward<Args>( _args )... );
+			m_Index = sizeof...( Types ) - index_of<T, Types...>::value;
+		}
+
+		// --------------------------------------------------------------------------
 		template <class T, class U, class... Args> void emplace( std::initializer_list<U>, Args &&... );
 		template <size_t I, class... Args> void			emplace( Args &&... );
 		template <size_t I, class U, class... Args>
@@ -526,8 +556,8 @@ namespace core
 
 		// --------------------------------------------------------------------------
 		// 20.7.2.6, swap
-		// TODO: check correct order of statements to meet the defined state criteras
-		// after an exception occured during construction
+		// TODO: check correct order of statements to meet the defined state criteria
+		// after an exception occurred during construction
 		// --------------------------------------------------------------------------
 		void swap( variant &_rhs )
 			CORE_NOTHROW_IF( std::conjunction<std::is_move_constructible<Types>... /*,
